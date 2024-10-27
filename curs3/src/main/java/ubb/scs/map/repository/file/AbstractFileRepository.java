@@ -4,6 +4,7 @@ import ubb.scs.map.domain.Entity;
 import ubb.scs.map.repository.memory.InMemoryRepository;
 
 import java.io.*;
+import java.util.Optional;
 
 
 public abstract class AbstractFileRepository<ID, E extends Entity<ID>> extends InMemoryRepository<ID, E>{
@@ -19,8 +20,8 @@ public abstract class AbstractFileRepository<ID, E extends Entity<ID>> extends I
     public abstract String saveEntity(E entity);
 
     @Override
-    public E save(E entity) {
-        E e = super.save(entity);
+    public Optional<E> save(E entity) {
+        Optional<E> e = super.save(entity);
         if (e == null)
             writeToFile();
         return e;
@@ -54,15 +55,15 @@ public abstract class AbstractFileRepository<ID, E extends Entity<ID>> extends I
     }
 
     @Override
-    public E delete(ID id) {
-        E entity = super.delete(id);
+    public Optional<E> delete(ID id) {
+        Optional<E> entity = super.delete(id);
         if (entity != null) writeToFile();
         return entity;
     }
 
     @Override
-    public E update(E entity) {
-        E entity2 = super.update(entity);
+    public Optional<E> update(E entity) {
+        Optional<E> entity2 = super.update(entity);
         if (entity2 == null) writeToFile();
         return entity2;
     }

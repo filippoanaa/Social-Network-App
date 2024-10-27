@@ -4,65 +4,64 @@ package ubb.scs.map.repository;
 import ubb.scs.map.domain.Entity;
 import ubb.scs.map.domain.exceptions.EntityAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.EntityMissingException;
+import ubb.scs.map.domain.validators.ValidationException;
+
+import java.util.Optional;
 
 /**
  * CRUD operations repository interface
+ *
  * @param <ID> - type E must have an attribute of type ID
- * @param <E> -  type of entities saved in repository
+ * @param <E>  - type of entities saved in repository
  */
-
 public interface Repository<ID, E extends Entity<ID>> {
-
     /**
-     *
      * @param id -the id of the entity to be returned
+     *           <p>
      *           id must not be null
-     * @return the entity with the specified id
-     * @throws EntityMissingException if the entity with the given id does not exist
+     * @return an {@code Optional} encapsulating the entity with the given id
+     * @throws IllegalArgumentException if id is null.
      */
-    E findOne(ID id);
+    Optional<E> findOne(ID id);
 
     /**
-     *
      * @return all entities
      */
     Iterable<E> findAll();
 
     /**
-     *
-     * @param entity
-     *         entity must be not null
-     * @throws EntityAlreadyExistsException
-     *             if the entity is already in repository
-     * @throws IllegalArgumentException
-     *             if the given entity is null.
-     *
+     * @param entity entity must be not null
+     * @return an {@code Optional} - null if the entity was saved,
+     * <p>
+     * - the entity (id already exists)
+     * @throws ValidationException      if the entity is not valid
+     * @throws IllegalArgumentException if the given entity is null.
      */
-    E save(E entity);
-
+    Optional<E> save(E entity);
 
     /**
-     *  removes the entity with the specified id
-     * @param id
-     *      id must be not null
-     * @return the removed entity or null if there is no entity with the given id
-     * @throws IllegalArgumentException
-     *                   if the given id is null.
+     * removes the entity with the specified id
+     *
+     * @param id id must be not null
+     * @return an {@code Optional}
+     * <p>
+     * - null if there is no entity with the given id,
+     * <p>
+     * - the removed entity, otherwise
+     * @throws IllegalArgumentException if the given id is null.
      */
-    E delete(ID id);
+    Optional<E> delete(ID id);
 
     /**
-     *
-     * @param entity
-     *          entity must not be null
-     * @return null - if the entity is updated
-     * @throws IllegalArgumentException
-     *             if the given entity is null.
-     * @throws EntityMissingException
-     *                  if there is no user with the given id.
+     * @param entity entity must not be null* @return an {@code Optional}
+     *               <p>
+     *               - null if the entity was updated
+     *               <p>
+     *               - otherwise (e.g. id does not exist) returns the entity.
+     * @throws IllegalArgumentException if the given entity is null.
+     * @throws ValidationException      if the entity is not valid.
      */
-    E update(E entity);
-
+    Optional<E> update(E entity);
     boolean exists(ID id);
 
 }

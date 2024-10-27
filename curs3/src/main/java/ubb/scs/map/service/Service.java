@@ -4,7 +4,6 @@ import ubb.scs.map.domain.Friendship;
 import ubb.scs.map.domain.Tuple;
 import ubb.scs.map.domain.User;
 import ubb.scs.map.domain.exceptions.EntityAlreadyExistsException;
-import ubb.scs.map.domain.exceptions.EntityMissingException;
 import ubb.scs.map.domain.exceptions.UserMissingException;
 import ubb.scs.map.domain.validators.ValidationException;
 import ubb.scs.map.domain.validators.Validator;
@@ -14,14 +13,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
-public class UsersService {
+public class Service {
     private final Repository<String, User> userRepository;
     private final Validator<User> userValidator;
     private final Repository<Tuple<String, String>, Friendship> friendshipRepository;
     private final Validator<Friendship> friendshipValidator;
 
-    public UsersService(Repository<String, User> userRepository, Validator<User> userValidator, Repository<Tuple<String, String>, Friendship> friendshipRepository, Validator<Friendship> friendshipValidator) {
+    public Service(Repository<String, User> userRepository, Validator<User> userValidator, Repository<Tuple<String, String>, Friendship> friendshipRepository, Validator<Friendship> friendshipValidator) {
         this.userRepository = userRepository;
         this.userValidator = userValidator;
         this.friendshipRepository = friendshipRepository;
@@ -47,31 +48,22 @@ public class UsersService {
      *
      * @param username String
      */
-    public int deleteUser(String username) {
-        User user = userRepository.findOne(username);
+    public User deleteUser(String username) {
+        User user = userRepository.findOne(username).orElseThrow(() -> new UserMissingException(username));
 
-        List<Friendship> friendshipsToDelete = new ArrayList<>();
-        for (Friendship friendship : friendshipRepository.findAll()) {
-            if (friendship.getId().contains(user.getId())) {
-                friendshipsToDelete.add(friendship);
+        List<Friendship> toDelete = new ArrayList<>();
+        friendshipRepository.findAll().forEach(friendship ->{
+            if(friendship.getId().getE1().equals(username) || friendship.getId().getE2().equals(username)){
+                toDelete.add(friendship);
             }
-        }
+        });
 
-        for (Friendship friendship : friendshipsToDelete) {
-            String friendId = friendship.getId().getE1().equals(user.getId()) ? friendship.getId().getE2() : friendship.getId().getE1();
-            User friend = userRepository.findOne(friendId);
-            friend.removeFriend(user);
-            user.removeFriend(friend);
-            friendshipRepository.delete(friendship.getId());
-        }
-
-        userRepository.delete(username);
-
-        return 0;
+        toDelete.forEach(friendship -> friendshipRepository.delete(friendship.getId()));
+        user.getFriends().forEach(friend -> friend.removeFriend(user));
+        userRepository.delete(user.getId());
+        return user;
 
     }
-
-
 
 
     /**
@@ -110,8 +102,10 @@ public class UsersService {
         Friendship friendship = new Friendship(new Tuple<>(username1, username2));
         friendshipValidator.validate(friendship);
         friendshipsUsersChecking(username1, username2);
-        User user1 = userRepository.findOne(username1);
-        User user2 = userRepository.findOne(username2);
+        User user1 = userRepository.findOne(username1)
+                .orElseThrow(() -> new UserMissingException(username1));
+        User user2 = userRepository.findOne(username2)
+                .orElseThrow(() -> new UserMissingException(username2));
         user1.addFriend(user2);
         user2.addFriend(user1);
         friendshipRepository.save(friendship);
@@ -131,13 +125,13 @@ public class UsersService {
     public void removeFriendship(String username1, String username2) throws ValidationException, UserMissingException, EntityAlreadyExistsException {
         Tuple<String, String> frId = new Tuple<>(username1, username2);
         Tuple<String, String> reverseFrId = new Tuple<>(username2, username1);
-        Friendship friendship = friendshipRepository.findOne(frId);
+        Friendship friendship = friendshipRepository.findOne(frId).orElseThrow(() -> new UserMissingException(frId.toString()));
         if (friendship == null) {
-            friendship = friendshipRepository.findOne(reverseFrId);
+            friendship = friendshipRepository.findOne(reverseFrId) .orElseThrow(() -> new UserMissingException(reverseFrId.toString()));
         }
         friendshipsUsersChecking(username1, username2);
-        User user1 = userRepository.findOne(username1);
-        User user2 = userRepository.findOne(username2);
+        User user1 = userRepository.findOne(username1).orElseThrow(() -> new UserMissingException(username1));
+        User user2 = userRepository.findOne(username2).orElseThrow(() -> new UserMissingException(username2));
         user1.removeFriend(user2);
         user2.removeFriend(user1);
         friendshipRepository.delete(friendship.getId());
@@ -149,8 +143,8 @@ public class UsersService {
      */
     public void refreshFriends() {
         for (Friendship friendship : friendshipRepository.findAll()) {
-            User user1 = userRepository.findOne(friendship.getId().getE1());
-            User user2 = userRepository.findOne(friendship.getId().getE2());
+            User user1 = userRepository.findOne(friendship.getId().getE1()).orElseThrow(() -> new UserMissingException(friendship.getId().getE2()));
+            User user2 = userRepository.findOne(friendship.getId().getE2()).orElseThrow(() -> new UserMissingException(friendship.getId().getE1()));
 
             if (!user1.getFriends().contains(user2)) {
                 user1.addFriend(user2);
@@ -164,7 +158,7 @@ public class UsersService {
 
     }
 
-    private Map<String, Integer> visited = new HashMap<>();
+    private final Map<String, Integer> visited = new HashMap<>();
 
     /**
      * DFS to mark all users connected to the given user.
@@ -174,12 +168,11 @@ public class UsersService {
      */
     private void DFS(User user, int communityId) {
         visited.put(user.getId(), communityId);
-
-        for (User friend : user.getFriends()) {
-            if (!visited.containsKey(friend.getId())) {
+        user.getFriends().forEach(friend -> {
+            if(!visited.containsKey(friend.getId())) {
                 DFS(friend, communityId);
             }
-        }
+        });
     }
 
     /**
@@ -190,15 +183,16 @@ public class UsersService {
      * @return the number of communities found in the user network, int
      */
     public int numberOfCommunities() {
-        int numberOfConnectedComponents = 0;
+        AtomicInteger numberOfConnectedComponents = new AtomicInteger();
         visited.clear();
-        for (User user : userRepository.findAll()) {
-            if (!visited.containsKey(user.getId())) {
-                numberOfConnectedComponents++;
-                DFS(user, numberOfConnectedComponents);
+        userRepository.findAll().forEach(user -> {
+            if(!visited.containsKey(user.getId())) {
+                numberOfConnectedComponents.getAndIncrement();
+                DFS(user, numberOfConnectedComponents.get());
             }
-        }
-        return numberOfConnectedComponents;
+
+        });
+        return numberOfConnectedComponents.get();
     }
 
 
@@ -208,29 +202,30 @@ public class UsersService {
      * @return List<User>
      */
     public List<User> getTheMostFriendlyCommunity() {
-        int maxFriends = -1;
+        AtomicInteger maxFriends = new AtomicInteger(-1);
+        AtomicInteger communityIndex = new AtomicInteger(0);
         int numberOfCommunities = numberOfCommunities();
-        int[] freq = new int[numberOfCommunities + 1];
-        int communityIndex = 0;
+        int[] freq = new int[numberOfCommunities+1];
         List<User> mostFriendlyCommunity = new ArrayList<>();
 
-        for (User user : userRepository.findAll()) {
+        userRepository.findAll().forEach(user -> {
             int communityId = visited.get(user.getId());
             freq[communityId]++;
-        }
+        });
 
-        for (int i = 0; i < numberOfCommunities; i++) {
-            if (freq[i] > maxFriends) {
-                maxFriends = freq[i];
-                communityIndex = i;
+        IntStream.range(0, numberOfCommunities).forEach(i -> {
+            if (freq[i] > maxFriends.get()) {
+                maxFriends.set(freq[i]);
+                communityIndex.set(i);
             }
-        }
+        });
 
-        for (User u : userRepository.findAll()) {
-            if (visited.get(u.getId()) == communityIndex) {
-                mostFriendlyCommunity.add(u);
-            }
-        }
+
+        userRepository.findAll().forEach(user -> {
+           if(visited.get(user.getId()) == communityIndex.get())
+               mostFriendlyCommunity.add(user);
+        });
+
         return mostFriendlyCommunity;
     }
 
