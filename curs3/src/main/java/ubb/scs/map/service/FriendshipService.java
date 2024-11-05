@@ -14,13 +14,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class FriendshipService extends Service {
+public class FriendshipService {
 
+    private final Repository<String, User> userRepository;
+    private final Repository<Tuple<String, String>, Friendship> friendshipRepository;
     private final Validator<Friendship> friendshipValidator;
     private final Map<String, Integer> visitedUsers = new HashMap<>();
 
     public FriendshipService(Repository<String, User> userRepository, Repository<Tuple<String, String>, Friendship> friendshipRepository, Validator<Friendship> friendshipValidator) {
-        super(userRepository, friendshipRepository);
+        this.userRepository = userRepository;
+        this.friendshipRepository = friendshipRepository;
         this.friendshipValidator = friendshipValidator;
     }
 
@@ -82,7 +85,8 @@ public class FriendshipService extends Service {
                 .orElseThrow(() -> new UserMissingException(username2));
         user1.addFriend(user2);
         user2.addFriend(user1);
-        friendshipRepository.save(friendship);
+        if(friendshipRepository.save(friendship).isPresent())
+            throw new EntityAlreadyExistsException("Friendship between " + username1 + " and " + username2 +"already exists!");
         refreshFriends();
     }
 

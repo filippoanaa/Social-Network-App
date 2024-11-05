@@ -5,16 +5,19 @@ import ubb.scs.map.domain.exceptions.EntityAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.EntityMissingException;
 import ubb.scs.map.domain.exceptions.UserAlreadyExistsException;
 import ubb.scs.map.domain.validators.ValidationException;
-import ubb.scs.map.service.Service;
-import ubb.scs.map.service.Service;
+import ubb.scs.map.service.FriendshipService;
+import ubb.scs.map.service.UserService;
+
 
 import java.util.List;
 import java.util.Scanner;
 
 public class UIConsole {
-    private final Service Service;
-    public UIConsole(Service Service) {
-        this.Service = Service;
+    private final UserService userService;
+    private final FriendshipService friendshipService;
+    public UIConsole(UserService userService, FriendshipService FriendshipService) {
+        this.userService = userService;
+        this.friendshipService = FriendshipService;
     }
 
     void printMenu(){
@@ -36,10 +39,10 @@ public class UIConsole {
         System.out.println("Last name: ");
         String lastName = scan.nextLine();
         try{
-            Service.addUser(username, firstName, lastName);
+            userService.addUser(username, firstName, lastName);
             System.out.println("User successfully added.");
         }
-        catch(ValidationException | IllegalArgumentException | UserAlreadyExistsException e){
+        catch(ValidationException | IllegalArgumentException | EntityAlreadyExistsException e){
             System.out.println(e.getMessage());
         }
 
@@ -49,7 +52,8 @@ public class UIConsole {
         System.out.println("Username: ");
         String username = scan.nextLine();
         try{
-            Service.deleteUser(username) ;
+            userService.deleteUser(username) ;
+            System.out.println("User successfully deleted.");
         }
         catch(EntityMissingException | IllegalArgumentException e){
             System.out.println(e.getMessage());
@@ -63,7 +67,7 @@ public class UIConsole {
         System.out.println("Username of the second user: ");
         String username2 = scan.nextLine();
         try{
-            Service.addFriendship(username1, username2);
+            friendshipService.addFriendship(username1, username2);
             System.out.println("Friendship successfully added.");
         }
         catch(IllegalArgumentException | EntityMissingException | EntityAlreadyExistsException | ValidationException e){
@@ -79,7 +83,7 @@ public class UIConsole {
         System.out.println("Username of the second user: ");
         String username2 = scan.nextLine();
         try{
-            Service.removeFriendship(username1, username2);
+            friendshipService.removeFriendship(username1, username2);
             System.out.println("Friendship successfully removed.");
         }
         catch(IllegalArgumentException | EntityMissingException  e){
@@ -90,13 +94,13 @@ public class UIConsole {
 
     public void getTheNumberOfCommunities(){
         System.out.println("Number of communities: ");
-        System.out.println(Service.numberOfCommunities());
+        System.out.println(friendshipService.numberOfCommunities());
 
     }
 
     public void getTheMostFriendlyCommunity(){
         System.out.println("The most friendly community:");
-        List<User> community = Service.getTheMostFriendlyCommunity();
+        List<User> community = friendshipService.getTheMostFriendlyCommunity();
         for(User u : community){
             System.out.println(u);
         }
@@ -108,7 +112,6 @@ public class UIConsole {
         Scanner scan = new Scanner(System.in);
         boolean exit = false;
         while(!exit){
-            Service.refreshFriends();
             printMenu();
             System.out.println("Your choice:");
             int choice = scan.nextInt();

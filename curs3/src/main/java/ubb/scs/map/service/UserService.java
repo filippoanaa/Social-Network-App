@@ -4,6 +4,7 @@ import ubb.scs.map.domain.Friendship;
 import ubb.scs.map.domain.Tuple;
 import ubb.scs.map.domain.User;
 import ubb.scs.map.domain.exceptions.EntityAlreadyExistsException;
+import ubb.scs.map.domain.exceptions.UserAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.UserMissingException;
 import ubb.scs.map.domain.validators.ValidationException;
 import ubb.scs.map.domain.validators.Validator;
@@ -13,12 +14,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
-public class UserService extends Service{
+import static java.util.stream.Collectors.toList;
+
+public class UserService {
+    private final Repository<String, User> userRepository;
+    private final Repository<Tuple<String, String>, Friendship> friendshipRepository;
     private final Validator<User> userValidator;
 
     public UserService(Repository<String, User> userRepository, Repository<Tuple<String, String>, Friendship> friendshipRepository, Validator<User> userValidator) {
-        super(userRepository, friendshipRepository);
+        this.userRepository = userRepository;
+        this.friendshipRepository = friendshipRepository;
         this.userValidator = userValidator;
     }
 
@@ -34,6 +42,7 @@ public class UserService extends Service{
         User user = new User(username, firstName, lastName);
         userValidator.validate(user);
         userRepository.save(user);
+
     }
 
     /**
@@ -42,7 +51,8 @@ public class UserService extends Service{
      * @param username String
      */
     public User deleteUser(String username) {
-        User user = userRepository.findOne(username).orElseThrow(() -> new UserMissingException(username));
+        User user = userRepository.findOne(username)
+                .orElseThrow(() -> new UserMissingException(username));
 
         List<Friendship> toDelete = new ArrayList<>();
         friendshipRepository.findAll().forEach(friendship -> {
@@ -50,6 +60,7 @@ public class UserService extends Service{
                 toDelete.add(friendship);
             }
         });
+
 
         toDelete.forEach(friendship -> friendshipRepository.delete(friendship.getId()));
         user.getFriends().forEach(friend -> friend.removeFriend(user));

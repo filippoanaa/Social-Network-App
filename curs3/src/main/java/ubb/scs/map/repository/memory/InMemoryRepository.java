@@ -2,6 +2,7 @@ package ubb.scs.map.repository.memory;
 
 
 import ubb.scs.map.domain.Entity;
+import ubb.scs.map.domain.exceptions.EntityAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.EntityMissingException;
 import ubb.scs.map.domain.exceptions.UserAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.UserMissingException;
@@ -37,12 +38,11 @@ public class InMemoryRepository<ID, E extends Entity<ID>> implements Repository<
     public Optional<E> save(E entity) throws ValidationException {
         if(entity==null)
             throw new IllegalArgumentException("Entity cannot be null");
-        if(entities.containsKey(entity.getId())){
-            throw new UserAlreadyExistsException("User with username: " + entity.getId() + " already exists");
-        }
+        if(entities.containsKey(entity.getId()))
+            throw new EntityAlreadyExistsException("Entity with ID: " + entity.getId() + " already exists");
         else{
             entities.put(entity.getId(),entity);
-            return null;
+            return Optional.empty();
         }
 
 
@@ -66,11 +66,10 @@ public class InMemoryRepository<ID, E extends Entity<ID>> implements Repository<
             throw new IllegalArgumentException("Entity cannnot be null");
         }
         if (!entities.containsKey(entity.getId()))
-            throw new UserMissingException("User with username: " + entity.getId() + " does not exist");
+            throw new EntityMissingException("Entity with username: " + entity.getId() + " does not exist");
 
         entities.put(entity.getId(),entity);
-
-        return Optional.of(entity);
+        return Optional.empty();
     }
 
     @Override

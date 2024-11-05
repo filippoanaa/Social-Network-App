@@ -22,7 +22,7 @@ public abstract class AbstractFileRepository<ID, E extends Entity<ID>> extends I
     @Override
     public Optional<E> save(E entity) {
         Optional<E> e = super.save(entity);
-        if (e == null)
+        if (e.isEmpty())
             writeToFile();
         return e;
     }
@@ -57,14 +57,14 @@ public abstract class AbstractFileRepository<ID, E extends Entity<ID>> extends I
     @Override
     public Optional<E> delete(ID id) {
         Optional<E> entity = super.delete(id);
-        if (entity != null) writeToFile();
+        if (entity.isPresent()) writeToFile();
         return entity;
     }
 
     @Override
     public Optional<E> update(E entity) {
         Optional<E> entity2 = super.update(entity);
-        if (entity2 == null) writeToFile();
+        if (entity2.isEmpty()) writeToFile();
         return entity2;
     }
 }

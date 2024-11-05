@@ -29,7 +29,7 @@ public class UserValidator implements Validator<User> {
         String errorMessages = "";
         boolean pattern = Pattern.matches("^[A-Za-z\\s]{3,}$", name);
         if (!pattern)
-            errorMessages += "Name must contain only letters and spaces. Minimum length 3.";
+            errorMessages += "name must contain only letters and spaces. Minimum length 3.";
         return errorMessages;
     }
 
@@ -47,11 +47,11 @@ public class UserValidator implements Validator<User> {
 
         String firstNameErrors = this.validateName(entity.getFirstName());
         if (!firstNameErrors.isEmpty())
-            errorMessages += firstNameErrors + "\n";
+            errorMessages += "First " + firstNameErrors + "\n";
 
         String lastNameErrors = this.validateName(entity.getLastName());
         if (!lastNameErrors.isEmpty())
-            errorMessages += lastNameErrors + "\n";
+            errorMessages += "Last " + lastNameErrors + "\n";
 
         if (!errorMessages.isEmpty())
             throw new ValidationException(errorMessages);
