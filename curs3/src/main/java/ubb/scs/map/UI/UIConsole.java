@@ -1,33 +1,37 @@
 package ubb.scs.map.UI;
 
+import ubb.scs.map.domain.Friendship;
 import ubb.scs.map.domain.User;
 import ubb.scs.map.domain.exceptions.EntityAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.EntityMissingException;
 import ubb.scs.map.domain.exceptions.UserAlreadyExistsException;
 import ubb.scs.map.domain.validators.ValidationException;
 import ubb.scs.map.service.FriendshipService;
-import ubb.scs.map.service.UserService;
+import ubb.scs.map.service.NetworkService;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 public class UIConsole {
-    private final UserService userService;
+    private final NetworkService NetworkService;
     private final FriendshipService friendshipService;
-    public UIConsole(UserService userService, FriendshipService FriendshipService) {
-        this.userService = userService;
+    public UIConsole(NetworkService NetworkService, FriendshipService FriendshipService) {
+        this.NetworkService = NetworkService;
         this.friendshipService = FriendshipService;
     }
 
     void printMenu(){
+        System.out.println();
         System.out.println("0.Exit.");
         System.out.println("1.Add user.");
         System.out.println("2.Remove user.");
-        System.out.println("3.Add friendship.");
-        System.out.println("4.Remove friendship.");
-        System.out.println("5.Number of communities");
-        System.out.println("6.The  most friendly community");
+        System.out.println("3.Update user.");
+        System.out.println("4.Add friendship.");
+        System.out.println("5.Remove friendship.");
+        System.out.println("6.Number of communities");
+        System.out.println("7.The  most friendly community");
     }
 
     private void addUser(){
@@ -38,8 +42,10 @@ public class UIConsole {
         String firstName = scan.nextLine();
         System.out.println("Last name: ");
         String lastName = scan.nextLine();
+        System.out.println("Password: ");
+        String password = scan.nextLine();
         try{
-            userService.addUser(username, firstName, lastName);
+            NetworkService.addUser(username, firstName, lastName, password);
             System.out.println("User successfully added.");
         }
         catch(ValidationException | IllegalArgumentException | EntityAlreadyExistsException e){
@@ -52,7 +58,7 @@ public class UIConsole {
         System.out.println("Username: ");
         String username = scan.nextLine();
         try{
-            userService.deleteUser(username) ;
+            NetworkService.deleteUser(username) ;
             System.out.println("User successfully deleted.");
         }
         catch(EntityMissingException | IllegalArgumentException e){
@@ -60,6 +66,23 @@ public class UIConsole {
         }
     }
 
+    private void updateUser(){
+        Scanner scan = new Scanner(System.in);
+        System.out.println("Username: ");
+        String username = scan.nextLine();
+        System.out.println("First name: ");
+        String firstName = scan.nextLine();
+        System.out.println("Last name: ");
+        String lastName = scan.nextLine();
+        System.out.println("Password: ");
+        String password = scan.nextLine();
+        try{
+            NetworkService.updateUser(username, firstName, lastName, password);
+            System.out.println("User successfully updated.");
+        }catch (ValidationException | EntityMissingException e){
+            System.out.println(e.getMessage());
+        }
+    }
     private void addFriendship(){
         Scanner scan = new Scanner(System.in);
         System.out.println("Username of the first user: ");
@@ -67,7 +90,7 @@ public class UIConsole {
         System.out.println("Username of the second user: ");
         String username2 = scan.nextLine();
         try{
-            friendshipService.addFriendship(username1, username2);
+            NetworkService.addFriendship(username1, username2);
             System.out.println("Friendship successfully added.");
         }
         catch(IllegalArgumentException | EntityMissingException | EntityAlreadyExistsException | ValidationException e){
@@ -83,7 +106,7 @@ public class UIConsole {
         System.out.println("Username of the second user: ");
         String username2 = scan.nextLine();
         try{
-            friendshipService.removeFriendship(username1, username2);
+            NetworkService.removeFriendship(username1, username2);
             System.out.println("Friendship successfully removed.");
         }
         catch(IllegalArgumentException | EntityMissingException  e){
@@ -100,9 +123,23 @@ public class UIConsole {
 
     public void getTheMostFriendlyCommunity(){
         System.out.println("The most friendly community:");
-        List<User> community = friendshipService.getTheMostFriendlyCommunity();
-        for(User u : community){
+        List<String> community = friendshipService.mostFriendlyCommunity();
+        for(String u : community){
             System.out.println(u);
+        }
+    }
+
+    private void seeAllUsers(){
+        Iterable<User> users = NetworkService.getAllUsers();
+        for(User u : users){
+            System.out.println(u);
+        }
+
+    }
+    private void seeAllFriendships(){
+        Iterable<Friendship> friendships = NetworkService.getAllFriendships();
+        for(Friendship f : friendships){
+            System.out.println(f.getId().getE1() +" " +f.getId().getE2());
         }
     }
 
@@ -119,10 +156,13 @@ public class UIConsole {
                 case 0: exit = true; break;
                 case 1: addUser(); break;
                 case 2: deleteUser(); break;
-                case 3: addFriendship(); break;
-                case 4: removeFriendship(); break;
-                case 5: getTheNumberOfCommunities(); break;
-                case 6: getTheMostFriendlyCommunity(); break;
+                case 3: updateUser(); break;
+                case 4: addFriendship(); break;
+                case 5: removeFriendship(); break;
+                case 6: getTheNumberOfCommunities(); break;
+                case 7: getTheMostFriendlyCommunity(); break;
+                case 8: seeAllUsers(); break;
+                case 9: seeAllFriendships(); break;
                 default:
                     System.out.println("Invalid choice. Try again.");
             }

@@ -3,15 +3,24 @@ package ubb.scs.map.domain;
 import java.time.LocalDateTime;
 
 public class Friendship extends Entity<Tuple<String ,String>> {
-    private final LocalDateTime date = LocalDateTime.now();
-
-    public Friendship(Tuple<String ,String> userTuple) {
-        super(userTuple);
+    private LocalDateTime friendsFrom;
+    public Friendship(String user1, String user2, LocalDateTime friendsFrom) {
+        super(new Tuple<>(user1, user2));
+        this.friendsFrom = friendsFrom;
     }
 
-    public LocalDateTime getDate() {
-        return date;
+    public Friendship(String user1, String user2) {
+        super(new Tuple<>(user1, user2));
+        this.friendsFrom = LocalDateTime.now();
     }
+
+    public LocalDateTime getFriendsFrom() {
+        return friendsFrom;
+    }
+    public void setFriendsFrom(LocalDateTime friendsFrom) {
+        this.friendsFrom = friendsFrom;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -23,4 +32,6 @@ public class Friendship extends Entity<Tuple<String ,String>> {
         return (thisTuple.getE1().equals(otherTuple.getE1()) && thisTuple.getE2().equals(otherTuple.getE2())) ||
                 (thisTuple.getE1().equals(otherTuple.getE2()) && thisTuple.getE2().equals(otherTuple.getE1()));
     }
+
+
 }

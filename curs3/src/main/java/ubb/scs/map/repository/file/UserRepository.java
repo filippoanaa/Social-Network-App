@@ -11,12 +11,12 @@ public class UserRepository extends AbstractFileRepository<String, User> {
     @Override
     public User createEntity(String line) {
         String[] splited = line.split(";");
-        return new User(splited[0], splited[1], splited[2]);
+        return new User(splited[0], splited[1], splited[2], splited[3]);
     }
 
     @Override
     public String saveEntity(User entity) {
-        return entity.getId() + ";" + entity.getFirstName() + ";" + entity.getLastName();
+        return entity.getId() + ";" + entity.getFirstName() + ";" + entity.getLastName() + ";" + entity.getPassword();
     }
 
 

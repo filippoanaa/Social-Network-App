@@ -33,6 +33,21 @@ public class UserValidator implements Validator<User> {
         return errorMessages;
     }
 
+    public String validatePassword(String password) {
+        String errorMessages = "";
+        boolean patternLength =password.length() >= 5;
+        boolean specialCharacter = Pattern.matches(".*[!@#$%^&*()~_+\\-{}\\[\\];':\"<>?/.,].*", password);
+        boolean numericCharacter = Pattern.matches(".*[0-9].*", password);
+        if(!patternLength)
+            errorMessages += "The password is too weak! It must have at least 5 characters\n";
+        if(!specialCharacter)
+            errorMessages += "The password must have at least one special character\n";
+        if(!numericCharacter)
+            errorMessages += "The password must have at least one numeric character\n";
+        return errorMessages;
+    }
+
+
     /**
      * Validates an user
      * @param entity - User
@@ -52,6 +67,10 @@ public class UserValidator implements Validator<User> {
         String lastNameErrors = this.validateName(entity.getLastName());
         if (!lastNameErrors.isEmpty())
             errorMessages += "Last " + lastNameErrors + "\n";
+
+        String passwordErrors = this.validatePassword(entity.getPassword());
+        if (!passwordErrors.isEmpty())
+            errorMessages += passwordErrors + "\n";
 
         if (!errorMessages.isEmpty())
             throw new ValidationException(errorMessages);

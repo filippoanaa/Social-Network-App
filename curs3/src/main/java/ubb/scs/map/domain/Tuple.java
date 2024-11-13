@@ -34,13 +34,7 @@ public class Tuple<E1,E2> {
     public String toString() {
         return e1.toString() + " " + e2.toString();
     }
-    public int size() {
-        if(e1 == null || e2 == null)
-            return 1;
-        return 2;
-    }
 
-    public boolean contains(E2 id) {
-        return e1.equals(id) || e2.equals(id);
-    }
+
+
 }

@@ -15,14 +15,13 @@ public class FriendshipRepository extends AbstractFileRepository<Tuple<String, S
     @Override
     public Friendship createEntity(String line) {
         String[] splited = line.split(";");
-        Tuple<String, String> tuple = new Tuple<>(splited[0], splited[1]);
-        return new Friendship(tuple);
+        return new Friendship(splited[0], splited[1], LocalDateTime.parse(splited[2]) );
     }
 
     @Override
     public String saveEntity(Friendship entity) {
         Tuple<String, String> usersTuple = entity.getId();
-        LocalDateTime date = entity.getDate();
+        LocalDateTime date = entity.getFriendsFrom();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
         String formattedTime = date.format(formatter);
         return  usersTuple.getE1() + ";" + usersTuple.getE2() + ";" + formattedTime ;

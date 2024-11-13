@@ -7,14 +7,17 @@ import java.util.Objects;
 public class User extends Entity<String>{
     private String firstName;
     private String lastName;
+    private String password;
     private  List<User> friends;
 
-    public User(String id, String firstName, String lastName) {
-        super(id);
+    public User(String username, String firstName, String lastName, String password) {
+        super(username);
         this.firstName = firstName;
         this.lastName = lastName;
+        this.password = password;
         friends = new ArrayList<>();
     }
+
 
     public String getFirstName() {
         return firstName;
@@ -32,9 +35,18 @@ public class User extends Entity<String>{
         this.lastName = lastName;
     }
 
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     public List<User> getFriends() {
         return friends;
     }
+
     public void addFriend(User friend) {
         friends.add(friend);
     }
@@ -64,4 +76,6 @@ public class User extends Entity<String>{
     public int hashCode() {
         return Objects.hash(getFirstName(), getLastName());
     }
+
+
 }
