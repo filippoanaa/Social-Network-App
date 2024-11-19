@@ -1,14 +1,11 @@
 package ubb.scs.map.service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class FriendshipService {
 
     NetworkService NetworkService;
-    private final Map<String, List<String>> adjacencyList = new HashMap<>();
+    private final Map<UUID, List<UUID>> adjacencyList = new HashMap<>();
 
     public FriendshipService(NetworkService NetworkService) {
         this.NetworkService = NetworkService;
@@ -16,11 +13,11 @@ public class FriendshipService {
 
 
 
-    private void DFS(String username, HashMap<String, Boolean> visitedUsers, List<String> community) {
-        visitedUsers.put(username, true);
-        community.add(username);
-        if (adjacencyList.containsKey(username)) {
-            adjacencyList.get(username).stream()
+    private void DFS(UUID id, HashMap<UUID, Boolean> visitedUsers, List<UUID> community) {
+        visitedUsers.put(id, true);
+        community.add(id);
+        if (adjacencyList.containsKey(id)) {
+            adjacencyList.get(id).stream()
                     .filter(x -> !visitedUsers.containsKey(x))
                     .forEach(x -> DFS(x, visitedUsers, community));
         }
@@ -29,9 +26,9 @@ public class FriendshipService {
     private void refreshFriendsList() {
         adjacencyList.clear();
         NetworkService.getAllUsers().forEach(user -> {
-            List<String> friends = new ArrayList<>();
+            List<UUID> friends = new ArrayList<>();
             NetworkService.getAllFriendships().forEach(friendship -> {
-                if (friendship.getId().getE1().equals(user.getId()))
+                if (friendship.getId().getE2().equals(user.getId()))
                     friends.add(friendship.getId().getE2());
                 if (friendship.getId().getE2().equals(user.getId()))
                     friends.add(friendship.getId().getE1());
@@ -43,13 +40,13 @@ public class FriendshipService {
 
     public int numberOfCommunities() {
         refreshFriendsList();
-        HashMap<String, Boolean> visitedUsers = new HashMap<>();
+        HashMap<UUID, Boolean> visitedUsers = new HashMap<>();
         int numberOfCommunities = 0;
 
-        for (String username : adjacencyList.keySet()) {
-            if (!visitedUsers.getOrDefault(username, false)) {
-                List<String> community = new ArrayList<>();
-                DFS(username, visitedUsers, community);
+        for (UUID id : adjacencyList.keySet()) {
+            if (!visitedUsers.getOrDefault(id, false)) {
+                List<UUID> community = new ArrayList<>();
+                DFS(id, visitedUsers, community);
                 numberOfCommunities++;
             }
         }
@@ -57,15 +54,15 @@ public class FriendshipService {
     }
 
 
-    public List<String> mostFriendlyCommunity() {
+    public List<UUID> mostFriendlyCommunity() {
         refreshFriendsList();
-        HashMap<String, Boolean> visitedUsers = new HashMap<>();
-        List<String> largestCommunity = new ArrayList<>();
+        HashMap<UUID, Boolean> visitedUsers = new HashMap<>();
+        List<UUID> largestCommunity = new ArrayList<>();
 
-        for (String username : adjacencyList.keySet()) {
-            if (!visitedUsers.getOrDefault(username, false)) {
-                List<String> community = new ArrayList<>();
-                DFS(username, visitedUsers, community);
+        for (UUID id : adjacencyList.keySet()) {
+            if (!visitedUsers.getOrDefault(id, false)) {
+                List<UUID> community = new ArrayList<>();
+                DFS(id, visitedUsers, community);
                 if (community.size() > largestCommunity.size()) {
                     largestCommunity = new ArrayList<>(community);
                 }

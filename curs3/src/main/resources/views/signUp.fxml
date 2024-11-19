@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<GridPane alignment="center" hgap="10" styleClass="root" stylesheets="/style/authentication.css" vgap="10" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ubb.scs.map.controllers.SignUpController">
+    <padding><Insets bottom="25" left="25" right="25" top="25" /></padding>
+
+    <Label styleClass="input-label" text="First Name:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+    <TextField fx:id="firstNameText" styleClass="input-field" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+
+    <Label styleClass="input-label" text="Last Name:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+    <TextField fx:id="lastNameText" styleClass="input-field" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+
+    <Label styleClass="input-label" text="Username:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+    <TextField fx:id="usernameText" styleClass="input-field" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+
+    <Label styleClass="input-label" text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+    <PasswordField fx:id="passwordText" styleClass="input-field" GridPane.columnIndex="2" GridPane.rowIndex="4" />
+
+    <Label styleClass="input-label" text="Password Conformation:" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+    <PasswordField fx:id="passwordConfirmationText" styleClass="input-field" GridPane.columnIndex="2" GridPane.rowIndex="5" />
+
+    <Label fx:id="messageToUser"
+           prefHeight="50.0"
+           prefWidth="200.0"
+           styleClass="error-message"
+           wrapText="true"
+           GridPane.columnIndex="0"
+           GridPane.columnSpan="3"
+           GridPane.rowIndex="7" />
+
+    <HBox alignment="center" spacing="10" GridPane.columnIndex="2" GridPane.rowIndex="6">
+        <Button id="createAccountButton" onAction="#handleCreateAccount" prefHeight="25.0" prefWidth="149.0" styleClass="login-button" text="Create account" />
+    </HBox>
+
+
+
+
+    <columnConstraints>
+        <ColumnConstraints />
+        <ColumnConstraints />
+        <ColumnConstraints />
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints />
+        <RowConstraints />
+        <RowConstraints />
+        <RowConstraints />
+        <RowConstraints />
+        <RowConstraints />
+      <RowConstraints />
+    </rowConstraints>
+
+</GridPane>

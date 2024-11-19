@@ -12,10 +12,7 @@ public class FriendshipValidator implements Validator<Friendship>{
      */
     @Override
     public void validate(Friendship entity) throws ValidationException {
-        if(entity.getId().getE1().length() < 3 || entity.getId().getE2().length() < 3)
-            throw new ValidationException("The username must have at least 3 characters");
-        if(entity.getId().getE1().equals(entity.getId().getE2())) {
-            throw new ValidationException("Friendship usernames cannot be the same!");
-        }
+        if(entity.getUser1() == entity.getUser2())
+            throw new ValidationException("You cannot add yourself as a friend...:(");
     }
 }

@@ -7,9 +7,12 @@ import ubb.scs.map.domain.exceptions.UserMissingException;
 import ubb.scs.map.repository.Repository;
 
 import java.sql.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
-public class UserRepositoryDatabase implements Repository<String, User> {
+public class UserRepositoryDatabase implements Repository<UUID, User> {
     private final String url;
     private final String username;
     private final String password;
@@ -20,26 +23,28 @@ public class UserRepositoryDatabase implements Repository<String, User> {
         this.password = password;
     }
 
+    // Extrage UUID-ul ca String și convertește-l înapoi în UUID
     private User extractEntityFromResultSet(ResultSet resultSet) throws SQLException {
+        UUID id = resultSet.getObject("id", UUID.class);
         String username = resultSet.getString("username");
-        String first_name = resultSet.getString("first_name");
-        String last_name = resultSet.getString("last_name");
-        String password = resultSet.getString("password");
-        return new User(username, first_name, last_name, password);
+        String firstName = resultSet.getString("first_name");
+        String lastName = resultSet.getString("last_name");
+        String password = resultSet.getString("password");;
+        User user = new User(username, firstName, lastName, password);
+        user.setId(id); // Setează ID-ul convertit
+        return user;
     }
 
     @Override
-    public Optional<User> findOne(String username) {
-        if (username.isEmpty())
-            throw new IllegalArgumentException("User's username for the database is empty");
-        String sql = "select * from users where username = ?";
+    public Optional<User> findOne(UUID id) {
+        String sql = "SELECT * FROM users WHERE id = ?";
         try (Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setString(1, username);
+            preparedStatement.setObject(1, id); // Setează UUID ca String
             ResultSet resultSet = preparedStatement.executeQuery();
 
-            if(!resultSet.next()) {
-                throw new UserMissingException(username + " does not exist!");
+            if (!resultSet.next()) {
+                throw new UserMissingException("The user with id:" + id + " does not exist!");
             }
             return Optional.of(extractEntityFromResultSet(resultSet));
 
@@ -48,86 +53,85 @@ public class UserRepositoryDatabase implements Repository<String, User> {
         }
 
         return Optional.empty();
-
     }
 
     @Override
     public Iterable<User> findAll() {
-        String sql = "select * from users";
-        Map<String, User> users= new HashMap<>();
-        try(Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
-            PreparedStatement preparedStatement = connection.prepareStatement(sql)){
-            ResultSet resultSet =  preparedStatement.executeQuery();
-            while(resultSet.next()){
+        String sql = "SELECT * FROM users";
+        Map<UUID, User> users = new HashMap<>();
+        try (Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
                 User user = extractEntityFromResultSet(resultSet);
                 users.put(user.getId(), user);
             }
-        }catch (SQLException sqlException){
+        } catch (SQLException sqlException) {
             sqlException.printStackTrace();
         }
         return users.values();
     }
 
     @Override
-    public Optional<User> save(User entity)  {
-        if(exists(entity.getId()))
+    public Optional<User> save(User entity) {
+        if (exists(entity.getId())) {
             throw new EntityAlreadyExistsException(entity.getId() + " already exists");
-        String sql = "insert into users values(?,?,?, ?)";
-        try(Connection connection = DriverManager.getConnection(this.url,this.username,this.password);
-            PreparedStatement preparedStatement = connection.prepareStatement(sql)){
-            preparedStatement.setString(1,entity.getId());
-            preparedStatement.setString(2, entity.getFirstName());
-            preparedStatement.setString(3,entity.getLastName());
-            preparedStatement.setString(4, entity.getPassword());
+        }
+        String sql = "INSERT INTO users (id, username, first_name, last_name, password) VALUES (?, ?, ?, ?, ?)";
+        try (Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            // Salvăm UUID-ul ca String
+            preparedStatement.setObject(1, entity.getId());
+            preparedStatement.setString(2, entity.getUsername());
+            preparedStatement.setString(3, entity.getFirstName());
+            preparedStatement.setString(4, entity.getLastName());
+            preparedStatement.setString(5, entity.getPassword());
             preparedStatement.executeUpdate();
-            }catch (SQLException sqlException){
-                sqlException.printStackTrace();
+        } catch (SQLException sqlException) {
+            sqlException.printStackTrace();
         }
         return Optional.of(entity);
-
     }
 
     @Override
-    public Optional<User> delete(String username) {
-        User user = findOne(username).orElseThrow(() -> new EntityMissingException(username + " does not exist!"));
-        String sql = "delete from users where username = ?";
-        try(Connection connection = DriverManager.getConnection(this.url,this.username,this.password);
-            PreparedStatement preparedStatement = connection.prepareStatement(sql)){
-            preparedStatement.setString(1,username);
+    public Optional<User> delete(UUID id) {
+        User user = findOne(id).orElseThrow(() -> new EntityMissingException("User with id:" + id + " does not exist!"));
+        String sql = "DELETE FROM users WHERE id = ?";
+        try (Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setObject(1, id);
             preparedStatement.executeUpdate();
-
-        }catch (SQLException sqlException){
+        } catch (SQLException sqlException) {
             sqlException.printStackTrace();
         }
         return Optional.of(user);
-
     }
 
     @Override
     public Optional<User> update(User entity) {
         findOne(entity.getId()).orElseThrow(() -> new EntityMissingException(entity.getId() + " does not exist!"));
-        String sql = "update users set first_name = ?, last_name = ?, password = ?  WHERE username = ?";
-        try(Connection connection = DriverManager.getConnection(this.url,this.username,this.password);
-            PreparedStatement preparedStatement = connection.prepareStatement(sql)){
-            preparedStatement.setString(1,entity.getFirstName());
-            preparedStatement.setString(2,entity.getLastName());
-            preparedStatement.setString(3,entity.getPassword());
-            preparedStatement.setString(4,entity.getId());
+        String sql = "UPDATE users SET username = ?, first_name = ?, last_name = ?, password = ? WHERE id = ?";
+        try (Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setString(1, entity.getUsername());
+            preparedStatement.setString(2, entity.getFirstName());
+            preparedStatement.setString(3, entity.getLastName());
+            preparedStatement.setString(4, entity.getPassword());
+            preparedStatement.setObject(5, entity.getId());
             preparedStatement.executeUpdate();
-        }catch (SQLException sqlException){
+        } catch (SQLException sqlException) {
             sqlException.printStackTrace();
         }
         return Optional.of(entity);
     }
 
     @Override
-    public boolean exists(String username) {
-        try{
-            findOne(username);
-        }catch(EntityMissingException e){
+    public boolean exists(UUID id) {
+        try {
+            findOne(id);
+        } catch (EntityMissingException e) {
             return false;
         }
         return true;
     }
-
 }

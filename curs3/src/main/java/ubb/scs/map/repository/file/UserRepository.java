@@ -2,7 +2,9 @@ package ubb.scs.map.repository.file;
 
 import ubb.scs.map.domain.User;
 
-public class UserRepository extends AbstractFileRepository<String, User> {
+import java.util.UUID;
+
+public class UserRepository extends AbstractFileRepository<UUID, User> {
 
     public UserRepository(String fileName) {
         super(fileName);
@@ -11,15 +13,15 @@ public class UserRepository extends AbstractFileRepository<String, User> {
     @Override
     public User createEntity(String line) {
         String[] splited = line.split(";");
-        return new User(splited[0], splited[1], splited[2], splited[3]);
+        User user = new User(splited[1], splited[2], splited[3], splited[4]);
+        user.setId(UUID.fromString(splited[0]));
+        return user;
     }
 
     @Override
     public String saveEntity(User entity) {
-        return entity.getId() + ";" + entity.getFirstName() + ";" + entity.getLastName() + ";" + entity.getPassword();
+        return entity.getId() + ";" + entity.getUsername() + ";" + entity.getFirstName() + ";" + entity.getLastName() + ";" + entity.getPassword();
     }
-
-
 
 
 }

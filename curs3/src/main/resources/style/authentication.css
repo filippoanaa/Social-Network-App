@@ -1,0 +1,70 @@
+/* Stiluri generale */
+.root {
+    -fx-background-color: #f3f4f7; /* Fundal deschis pentru întreaga fereastră */
+    -fx-padding: 20px;
+}
+
+/* Stil pentru titlu */
+.login-title {
+    -fx-font-size: 24px;
+    -fx-font-family: "Arial";
+    -fx-font-weight: bold;
+    -fx-text-fill: #3f51b5; /* Culoare albastru închis pentru titlu */
+    -fx-alignment: center;
+}
+
+/* Stil pentru etichetele de input */
+.input-label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #3f51b5; /* Culoare albastru închis pentru etichete */
+    -fx-font-weight: bold;
+}
+
+/* Stil pentru câmpurile de input (TextField și PasswordField) */
+.input-field {
+    -fx-font-size: 14px;
+    -fx-padding: 10px;
+    -fx-background-radius: 5px;
+    -fx-background-color: #ffffff; /* Fundal alb */
+    -fx-border-color: #3f51b5; /* Bordură albastră */
+    -fx-border-width: 2px; /* Grosimea bordurii */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0, 3, 3); /* Umbra subtilă */
+}
+
+/* Stil pentru mesajele de eroare */
+.error-message {
+    -fx-text-fill: red; /* Culoare roșie pentru mesajele de eroare */
+    -fx-font-size: 12px;
+    -fx-font-style: italic;
+}
+
+/* Stil pentru butonul de logare */
+.login-button {
+    -fx-background-color: linear-gradient(#3f51b5, #303f9f); /* Gradient albastru pentru fundal */
+    -fx-text-fill: white;
+    -fx-font-family: "Arial Narrow";
+    -fx-font-weight: bold;
+    -fx-background-radius: 10px; /* Colțuri rotunjite */
+    -fx-padding: 10 20;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+}
+
+/* Efect hover pentru butonul de logare */
+.login-button:hover {
+    -fx-background-color: linear-gradient(#303f9f, #3f51b5); /* Schimbă nuanța de albastru */
+}
+
+
+/* Marginea formularului */
+GridPane {
+    -fx-background-color: white; /* Fundal alb pentru formular */
+    -fx-background-radius: 10px; /* Colțuri rotunjite pentru formular */
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.3), 10, 0.0, 0, 5); /* Umbra subtilă pentru formular */
+}
+
+/* Adăugarea unui efect de focus pe câmpurile de input */
+.input-field:focused {
+    -fx-border-color: #303f9f; /* Culoare albastră mai închisă la focus */
+    -fx-background-color: #f0f5ff; /* Fundal ușor albastru deschis când câmpul este selectat */
+}

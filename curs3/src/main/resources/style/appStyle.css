@@ -1,0 +1,58 @@
+/* Stil pentru butoane */
+.button {
+    -fx-text-fill: white;
+    -fx-font-family: "Arial Narrow";
+    -fx-font-weight: bold;
+    -fx-background-color: linear-gradient(#3f51b5, #303f9f); /* Gradient albastru pentru fundal */
+    -fx-background-radius: 10px; /* Colțuri rotunjite pentru butoane */
+    -fx-padding: 10 20; /* Margine internă mai mare pentru butoane */
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.6), 5, 0.0, 0, 1); /* Umbra pentru efect de adâncire */
+    -fx-font-size: 14px; /* Dimensiunea fontului pentru butoane */
+}
+
+/* Stil pentru label (textul de feedback sau alte etichete) */
+.label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #3f51b5; /* Culoare textului albastru închis */
+    -fx-font-weight: bold; /* Text îngroșat pentru impact vizual */
+    -fx-effect: dropshadow(gaussian, rgba(63, 81, 181, 0.5), 3, 0, 3, 1); /* Umbra discretă */
+    -fx-padding: 5px; /* Margine internă pentru etichete */
+}
+
+/* Stil pentru celule selectate în tabel */
+.table-row-cell:selected {
+    -fx-background-color: #3f51b5; /* Fundal albastru închis pentru rândul selectat */
+    -fx-background-radius: 5px; /* Colțuri rotunjite pentru celule selectate */
+}
+
+.table-row-cell:selected .text {
+    -fx-fill: #ffffff; /* Culoare textului alb în celulele selectate */
+}
+
+/* Stiluri adiționale pentru tabele */
+.table-view {
+    -fx-background-color: #ffffff; /* Fundal alb pentru tabel */
+    -fx-border-color: #3f51b5; /* Bordură albastră */
+    -fx-border-width: 2px; /* Grosimea bordurii */
+    -fx-padding: 10px; /* Margine internă a tabelului */
+}
+
+.table-column {
+    -fx-alignment: CENTER; /* Aliniere centrală pentru textul din coloane */
+}
+
+.table-cell {
+    -fx-padding: 8px 15px; /* Padding intern pentru celule, pentru a face textul mai lizibil */
+}
+
+/* Adăugarea unui efect de hover pentru butoane */
+.button:hover {
+    -fx-background-color: linear-gradient(#388e3c, #3f51b5); /* Schimbarea culorii gradientului la hover */
+    -fx-cursor: hand; /* Cursorul se schimbă la mâna pentru a indica un element interactiv */
+}
+
+/* Efecte pentru tabel pe hover */
+.table-row-cell:hover {
+    -fx-background-color: rgba(63, 81, 181, 0.2); /* Fundal mai deschis pentru celulele pe hover */
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.3), 3, 0.0, 0, 3); /* Umbră ușoară pentru celulele pe hover */
+}

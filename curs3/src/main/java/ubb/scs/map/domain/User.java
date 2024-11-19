@@ -3,22 +3,28 @@ package ubb.scs.map.domain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
-public class User extends Entity<String>{
+public class User extends Entity<UUID>{
+    String username;
     private String firstName;
     private String lastName;
     private String password;
-    private  List<User> friends;
+    private List<User> friends;
 
+    public User() {}
     public User(String username, String firstName, String lastName, String password) {
-        super(username);
+        this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;
         this.password = password;
         friends = new ArrayList<>();
+        this.setId(UUID.randomUUID());
+
     }
 
-
+    public String getUsername(){ return username; }
+    public void setUsername(String username){ this.username = username; }
     public String getFirstName() {
         return firstName;
     }
@@ -58,6 +64,7 @@ public class User extends Entity<String>{
     @Override
     public String toString() {
         return "User{" +
+                "username='" + username + '\'' +
                 "firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 '}';

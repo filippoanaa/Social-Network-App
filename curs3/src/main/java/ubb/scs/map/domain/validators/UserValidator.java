@@ -13,7 +13,7 @@ public class UserValidator implements Validator<User> {
      * @param username - the string that has to be validated
      * @return errorMessages - String that contains the validation errors
      */
-    private String validateId(String username) {
+    private String validateUsername(String username) {
         String errorMessages = "";
         if (username.length() <= 2)
             errorMessages += "Username is too short.";
@@ -56,7 +56,7 @@ public class UserValidator implements Validator<User> {
     @Override
     public void validate(User entity) throws ValidationException {
         String errorMessages = "";
-        String usernameErrors = this.validateId(entity.getId());
+        String usernameErrors = this.validateUsername(entity.getUsername());
         if (!usernameErrors.isEmpty())
             errorMessages += usernameErrors + "\n";
 

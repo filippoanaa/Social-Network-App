@@ -36,13 +36,19 @@ dependencies {
         exclude(group: 'org.openjfx')
     }
     implementation('org.kordamp.bootstrapfx:bootstrapfx-core:0.4.0')
+    implementation 'org.openjfx:javafx-controls:19'
+    implementation 'org.openjfx:javafx-fxml:19'
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+    // JUnit Jupiter API pentru testare
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
 
-    // https://mvnrepository.com/artifact/org.postgresql/postgresql
-    implementation group: 'org.postgresql', name: 'postgresql', version: '42.5.0'
-    implementation("org.postgresql:postgresql:42.6.0")
+    // JUnit Jupiter Engine pentru a rula testele
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+
+    // (opțional) pentru a permite utilizarea JUnit Vintage pentru testele vechi
+    testImplementation 'org.junit.vintage:junit-vintage-engine:5.8.2'
+
+    implementation 'org.postgresql:postgresql:42.6.0'
 }
 
 tasks.test {
@@ -50,14 +56,14 @@ tasks.test {
 }
 
 
-jlink {
-    imageZip = project.file("${buildDir}/distributions/app-${javafx.platform.classifier}.zip")
-    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
-    launcher {
-        name = 'app'
-    }
+
+dependencies {
+    implementation 'org.openjfx:javafx-controls:19'
 }
 
-jlinkZip {
-    group = 'distribution'
-}
+applicationDefaultJvmArgs = [
+        '--module-path', 'C:\\Users\\Lenovo\\Downloads\\openjfx-20.0.2_windows-x64_bin-sdk\\javafx-sdk-20.0.2\\lib',  // Calea către folderul 'lib' al JavaFX SDK
+        '--add-modules', 'javafx.controls,javafx.fxml',
+        '--add-opens', 'javafx.graphics/com.sun.javafx.util=ALL-UNNAMED',  // Permite accesul la clasele interne
+        '--add-opens', 'javafx.fxml/com.sun.javafx.fxml=ALL-UNNAMED' // Permite accesul la clasele interne din FXML
+]

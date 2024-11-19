@@ -1,10 +1,12 @@
 package ubb.scs.map.service;
 
 import ubb.scs.map.domain.Friendship;
+import ubb.scs.map.domain.FriendshipStatus;
 import ubb.scs.map.domain.Tuple;
 import ubb.scs.map.domain.User;
 import ubb.scs.map.domain.exceptions.EntityAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.EntityMissingException;
+import ubb.scs.map.domain.exceptions.UserAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.UserMissingException;
 import ubb.scs.map.domain.validators.ValidationException;
 import ubb.scs.map.domain.validators.Validator;
@@ -13,94 +15,81 @@ import ubb.scs.map.observer.Observable;
 import ubb.scs.map.observer.Observer;
 import ubb.scs.map.repository.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 
-public class NetworkService{
-    private final Repository<String, User> userRepository;
-    private final Repository<Tuple<String, String>, Friendship> friendshipRepository;
+public class NetworkService implements Observable<UserEvent> {
+    private final Repository<UUID, User> userRepository;
+    private final Repository<Tuple<UUID, UUID>, Friendship> friendshipRepository;
     private final Validator<User> userValidator;
     private final Validator<Friendship> friendshipValidator;
-    //private final List<Observer<UserEvent>> observers;
+    private final List<Observer<UserEvent>> observers;
 
-    public NetworkService(Repository<String, User> userRepository, Repository<Tuple<String, String>, Friendship> friendshipRepository, Validator<User> userValidator, Validator<Friendship> friendshipValidator) {
+    public NetworkService(Repository<UUID, User> userRepository, Repository<Tuple<UUID, UUID>, Friendship> friendshipRepository, Validator<User> userValidator, Validator<Friendship> friendshipValidator) {
         this.userRepository = userRepository;
         this.friendshipRepository = friendshipRepository;
         this.userValidator = userValidator;
         this.friendshipValidator = friendshipValidator;
+        this.observers = new ArrayList<>();
     }
 
-    /**
-     * Method that adds a user
-     *
-     * @param username  String
-     * @param firstName String
-     * @param lastName  String
-     * @throws ValidationException if the user is not valid
-     */
-    public void addUser(String username, String firstName, String lastName, String password) throws ValidationException {
-        User user = new User(username, firstName, lastName, password);
+    public User findUserByUsername(String username){
+        Iterable<User> users = userRepository.findAll();
+        for(User user : users){
+            if(user.getUsername().equals(username))
+                return user;
+        }
+        return null;
+    }
+
+    public Optional<User> findUserById(UUID id){
+        return userRepository.findOne(id);
+    }
+
+
+
+    public void addUser(User user) throws ValidationException, EntityAlreadyExistsException {
         userValidator.validate(user);
+        if(findUserByUsername(user.getUsername()) != null)
+            throw new UserAlreadyExistsException("User with username: " + user.getUsername() + " already exists!");
         userRepository.save(user);
 
     }
 
-    /**
-     * Method that deletes a user by username
-     *
-     * @param username String
-     */
-    public User deleteUser(String username) {
-        User user = userRepository.findOne(username)
-                .orElseThrow(() -> new UserMissingException(username));
+    public void deleteUser(UUID id) {
+        User user = findUserById(id).orElseThrow();
+        if (user != null) {
+            List<Friendship> toDelete = new ArrayList<>();
+            friendshipRepository.findAll().forEach(friendship -> {
+                if (friendship.getId().getE1().equals(id) || friendship.getId().getE2().equals(id)){
+                    toDelete.add(friendship);
+                }
+            });
+            toDelete.forEach(friendship -> friendshipRepository.delete(friendship.getId()));
+            user.getFriends().forEach(friend -> friend.removeFriend(user));
+            userRepository.delete(user.getId());
 
-        List<Friendship> toDelete = new ArrayList<>();
-        friendshipRepository.findAll().forEach(friendship -> {
-            if (friendship.getId().getE1().equals(username) || friendship.getId().getE2().equals(username)) {
-                toDelete.add(friendship);
-            }
-        });
-
-
-        toDelete.forEach(friendship -> friendshipRepository.delete(friendship.getId()));
-        user.getFriends().forEach(friend -> friend.removeFriend(user));
-        userRepository.delete(user.getId());
-        return user;
+        }else{
+            throw new EntityMissingException("User not found!");
+        }
 
     }
 
-    /**
-     * Modifies an existing User
-     * @param username String
-     * @param password String
-     * @param firstName String
-     * @param lastName String
-     * @throws EntityMissingException if the user does not exist
-     * @throws ValidationException if the given data is not valid for a user to be created
-     */
-    public void updateUser(String username, String firstName, String lastName, String password) throws EntityMissingException, ValidationException{
+    public void updateUser(String username, String firstName, String lastName, String password) throws EntityMissingException, ValidationException {
         User user = new User(username, firstName, lastName, password);
         userValidator.validate(user);
         userRepository.update(user);
     }
 
-    public Iterable<User> getAllUsers(){
+    public Iterable<User> getAllUsers() {
         return userRepository.findAll();
     }
 
-    /**
-     * Method that checks if the users exist, and if the friendship doesn't already exist
-     *
-     * @param username1 String
-     * @param username2 String
-     * @throws UserMissingException         if one or both of the users don t exist
-     * @throws EntityAlreadyExistsException if the friendship already exists
-     */
     private void friendshipsUsersChecking(String username1, String username2) throws UserMissingException {
-        boolean user1Exists = userRepository.exists(username1);
-        boolean user2Exists = userRepository.exists(username2);
+        User u1 = findUserByUsername(username1);
+        User u2 = findUserByUsername(username2);
+        boolean user1Exists = userRepository.exists(u1.getId());
+        boolean user2Exists = userRepository.exists(u2.getId());
 
         if (!user1Exists && !user2Exists) {
             throw new UserMissingException("Both users " + username1 + " and " + username2 + " do not exist!");
@@ -109,112 +98,145 @@ public class NetworkService{
         } else if (!user2Exists) {
             throw new UserMissingException("User " + username2 + " does not exist!");
         }
-
-
     }
 
-
-    /**
-     * Method that adds a friendship.
-     *
-     * @param username1 String
-     * @param username2 String
-     * @throws ValidationException          if the friendship data is invalid.
-     * @throws UserMissingException         if one or both users do not exist.
-     * @throws EntityAlreadyExistsException if the friendship already exists.
-     */
-    public void addFriendship(String username1, String username2) throws ValidationException, UserMissingException, EntityAlreadyExistsException {
-        Friendship friendship = new Friendship(username1, username2);
+    public void createFriendship(Friendship friendship) throws ValidationException, UserMissingException, EntityAlreadyExistsException {
         friendshipValidator.validate(friendship);
-        friendshipsUsersChecking(username1, username2);
-        User user1 = userRepository.findOne(username1)
-                .orElseThrow(() -> new UserMissingException(username1));
-        User user2 = userRepository.findOne(username2)
-                .orElseThrow(() -> new UserMissingException(username2));
-        user1.addFriend(user2);
-        user2.addFriend(user1);
-        friendshipRepository.save(friendship);
 
+        if (friendshipRepository.exists(friendship.getId())) {
+            throw new EntityAlreadyExistsException("Friendship between these users already exists or it's in pending..");
+        }
+
+        friendshipRepository.save(friendship);
     }
-    public Iterable<Friendship> getAllFriendships(){
+
+
+    public Iterable<Friendship> getAllFriendships() {
         return friendshipRepository.findAll();
     }
 
-    /**
-     * method that removes a friendship
-     *
-     * @param username1 String
-     * @param username2 String
-     * @throws ValidationException          if the friendship data is invalid.
-     * @throws UserMissingException         if one or both users do not exist.
-     * @throws EntityAlreadyExistsException if the friendship already exists.
-     */
-    public void removeFriendship(String username1, String username2) throws ValidationException, UserMissingException, EntityAlreadyExistsException {
-        Tuple<String, String> frId = new Tuple<>(username1, username2);
-        Tuple<String, String> reverseFrId = new Tuple<>(username2, username1);
-        Friendship friendship = friendshipRepository.findOne(frId)
-                .orElseThrow(() -> new UserMissingException(frId.toString()));
-        if (friendship == null) {
-            friendship = friendshipRepository.findOne(reverseFrId)
-                    .orElseThrow(() -> new UserMissingException(reverseFrId.toString()));
-        }
-        friendshipsUsersChecking(username1, username2);
-        User user1 = userRepository.findOne(username1)
-                .orElseThrow(() -> new UserMissingException(username1));
-        User user2 = userRepository.findOne(username2)
-                .orElseThrow(() -> new UserMissingException(username2));
+    public void removeFriendship(UUID id1, UUID id2)throws EntityMissingException{
+        User user1 = findUserById(id1).orElseThrow();
+        User user2 = findUserById(id2).orElseThrow();
+
+        friendshipsUsersChecking(user1.getUsername(), user2.getUsername());
+
+
+        UUID idUser1 = user1.getId();
+        UUID idUser2 = user2.getId();
+
+        Tuple<UUID, UUID> friendshipId1 = new Tuple<>(idUser1, idUser2);
+        Tuple<UUID, UUID> friendshipId2 = new Tuple<>(idUser2, idUser1);
+
+
+        Friendship friendship = friendshipRepository.findOne(friendshipId1).orElse(
+                friendshipRepository.findOne(friendshipId2).orElseThrow(() -> new EntityMissingException("Friendship does not exist!"))
+        );
+
         user1.removeFriend(user2);
         user2.removeFriend(user1);
         friendshipRepository.delete(friendship.getId());
     }
 
+    public void removeFriendRequest(UUID id1, UUID id2){
+        Friendship friendship = friendshipRepository.findOne(new Tuple<>(id1, id2)).orElseThrow();
+        if(friendship.getFriendshipStatus() != FriendshipStatus.PENDING)
+            throw new IllegalArgumentException("You cannot delete this friend request anymore!It's already declined.");
+        else
+            removeFriendship(id1, id2);
+    }
 
-    /**
-     * Verifies if the password matches the users' password
-     * @param username  a String given by the user
-     * @param password a String given by the user
-     * @return true if the password given by the user is equal with the password of the user
-     */
+
     public boolean verifyCredentials(String username, String password) {
-        Optional<User> user = userRepository.findOne(username);
-        return  user.isPresent() && Objects.equals(user.get().getPassword(), password);
+        User user = findUserByUsername(username);
+        return user != null && user.getPassword().equals(password);
     }
 
-    public Optional<User> findUser(String username) {
-        return userRepository.findOne(username);
+    public Optional<User> findUserByName(String firstName, String lastName) {
+        for (User user : userRepository.findAll()) {
+            if ((user.getFirstName().equals(firstName) && user.getLastName().equals(lastName)) || (user.getLastName().equals(firstName) && user.getFirstName().equals(lastName))) {
+                return Optional.of(user);
+            }
+        }
+        return Optional.empty();
     }
 
-    public Iterable<User> getFriendsOfUser(String username) {
-        User user = userRepository.findOne(username).orElseThrow(() -> new UserMissingException(username));
+    public Iterable<User> getAcceptedFriendRequests(UUID id) {
         List<User> friends = new ArrayList<>();
         for (Friendship friendship : friendshipRepository.findAll()) {
-            if (friendship.getId().getE1().equals(username)) {
+            if (friendship.getId().getE1().equals(id) && friendship.getFriendshipStatus().equals(FriendshipStatus.ACCEPTED)) {
                 userRepository.findOne(friendship.getId().getE2()).ifPresent(friends::add);
-            } else if (friendship.getId().getE2().equals(username)) {
+            } else if (friendship.getId().getE2().equals(id) && friendship.getFriendshipStatus().equals(FriendshipStatus.ACCEPTED)) {
                 userRepository.findOne(friendship.getId().getE1()).ifPresent(friends::add);
             }
         }
         return friends;
+    }
+
+    public Iterable<Friendship> getSentRequests(UUID id) {
+        List<Friendship> friendships = new ArrayList<>();
+        for (Friendship friendship : friendshipRepository.findAll() ) {
+            UUID user1 = friendship.getUser1();
+            UUID user2 = friendship.getUser2();
+            if (user1.equals(id) && friendship.isSender(user1) ) {
+                friendships.add(friendship);
+            } else if (user2.equals(id) && friendship.isSender(user2)) {
+                friendships.add(friendship);
+            }
+        }
+        return friendships;
+    }
+
+    public Iterable<Friendship> getReceivedRequests(UUID id){
+        List<Friendship> friendships = new ArrayList<>();
+        for (Friendship friendship : friendshipRepository.findAll() ) {
+            UUID user1 = friendship.getUser1();
+            UUID user2 = friendship.getUser2();
+            if (user1.equals(id) && !friendship.isSender(user1) ) {
+                friendships.add(friendship);
+            } else if (user2.equals(id) && !friendship.isSender(user2)) {
+                friendships.add(friendship);
+            }
+        }
+        return friendships;
+    }
+
+
+    public void  acceptFriendRequest(Tuple<UUID, UUID> id){
+        Friendship friendship = friendshipRepository.findOne(id).orElseThrow();
+        friendship.setFriendshipStatus(FriendshipStatus.ACCEPTED);
+        friendship.setFriendsFrom(LocalDateTime.now());
+
+        friendshipRepository.update(friendship);
+
+        User user1 = findUserById(friendship.getId().getE1()).orElseThrow();
+        User user2 = findUserById(friendship.getId().getE2()).orElseThrow();
+
+        user1.addFriend(user2);
+        user2.addFriend(user1);
+    }
+
+    public void declineFriendRequest(Tuple<UUID, UUID> id){
+        Friendship friendship = friendshipRepository.findOne(id).orElseThrow();
+        friendship.setFriendshipStatus(FriendshipStatus.REJECTED);
+        friendshipRepository.update(friendship);
 
     }
-//
-//    @Override
-//    public void addObserver(Observer<UserEvent> observer) {
-//
-//    }
-//
-//    @Override
-//    public void removeObserver(Observer<UserEvent> observer) {
-//
-//    }
-//
-//    @Override
-//    public void notifyObservers(UserEvent event) {
-//
-//    }
+
+
+
+    @Override
+    public void addObserver(Observer<UserEvent> observer) {
+        observers.add(observer);
+    }
+
+    @Override
+    public void removeObserver(Observer<UserEvent> observer) {
+        observers.remove(observer);
+    }
+
+    @Override
+    public void notifyObservers(UserEvent event) {
+        observers.forEach(o -> o.update(event));
+    }
 }
-
-
-
-
-

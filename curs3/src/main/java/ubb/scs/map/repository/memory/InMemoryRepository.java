@@ -22,9 +22,8 @@ public class InMemoryRepository<ID, E extends Entity<ID>> implements Repository<
 
     @Override
     public Optional<E> findOne(ID id) {
-        if (!entities.containsKey(id)) {
-            throw new EntityMissingException("Entity with ID: " + id + " does not exist");
-        }
+        if(id == null)
+            throw new IllegalArgumentException("Id cannot be null");
         return Optional.ofNullable(entities.get(id));
     }
 
@@ -38,7 +37,7 @@ public class InMemoryRepository<ID, E extends Entity<ID>> implements Repository<
         if (entity == null)
             throw new IllegalArgumentException("Entity cannot be null");
         if (entities.containsKey(entity.getId()))
-            throw new EntityAlreadyExistsException("Entity with ID: " + entity.getId() + " already exists");
+            return Optional.of(entity);
         else {
             entities.put(entity.getId(), entity);
             return Optional.empty();
@@ -50,10 +49,13 @@ public class InMemoryRepository<ID, E extends Entity<ID>> implements Repository<
     @Override
     public Optional<E> delete(ID id) {
         if (id == null) {
-            throw new IllegalArgumentException("Username cannot be null");
+            throw new IllegalArgumentException("Id cannot be null");
         }
-        findOne(id).orElseThrow(() -> new EntityMissingException("Entity with ID: " + id + " does not exist"));
-        return Optional.ofNullable(entities.remove(id));
+        E entity = entities.get(id);
+        if(entity == null)
+            return Optional.empty();
+        return Optional.ofNullable(entities.remove(entity.getId()));
+
     }
 
 
@@ -62,9 +64,12 @@ public class InMemoryRepository<ID, E extends Entity<ID>> implements Repository<
         if (entity == null) {
             throw new IllegalArgumentException("Entity cannot be null");
         }
-        findOne(entity.getId()).orElseThrow(() -> new EntityMissingException("Entity with ID: " + entity.getId() + " does not exist"));
         entities.put(entity.getId(), entity);
-        return Optional.empty();
+        if(entities.get(entity.getId()) != null) {
+            entities.put(entity.getId(), entity);
+            return Optional.empty();
+        }
+        return Optional.of(entity);
     }
 
     @Override
