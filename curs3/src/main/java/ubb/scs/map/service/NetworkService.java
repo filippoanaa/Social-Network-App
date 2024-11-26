@@ -10,27 +10,22 @@ import ubb.scs.map.domain.exceptions.UserAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.UserMissingException;
 import ubb.scs.map.domain.validators.ValidationException;
 import ubb.scs.map.domain.validators.Validator;
-import ubb.scs.map.event.UserEvent;
-import ubb.scs.map.observer.Observable;
-import ubb.scs.map.observer.Observer;
 import ubb.scs.map.repository.Repository;
 
 import java.time.LocalDateTime;
 import java.util.*;
 
-public class NetworkService implements Observable<UserEvent> {
+public class NetworkService{
     private final Repository<UUID, User> userRepository;
     private final Repository<Tuple<UUID, UUID>, Friendship> friendshipRepository;
     private final Validator<User> userValidator;
     private final Validator<Friendship> friendshipValidator;
-    private final List<Observer<UserEvent>> observers;
 
     public NetworkService(Repository<UUID, User> userRepository, Repository<Tuple<UUID, UUID>, Friendship> friendshipRepository, Validator<User> userValidator, Validator<Friendship> friendshipValidator) {
         this.userRepository = userRepository;
         this.friendshipRepository = friendshipRepository;
         this.userValidator = userValidator;
         this.friendshipValidator = friendshipValidator;
-        this.observers = new ArrayList<>();
     }
 
     public User findUserByUsername(String username){
@@ -75,15 +70,19 @@ public class NetworkService implements Observable<UserEvent> {
 
     }
 
-    public void updateUser(String username, String firstName, String lastName, String password) throws EntityMissingException, ValidationException {
-        User user = new User(username, firstName, lastName, password);
+    public void updateUser(User user) throws EntityMissingException, ValidationException {
         userValidator.validate(user);
         userRepository.update(user);
+    }
+
+    public void updateFriendship(Friendship friendship){
+        friendshipRepository.update(friendship);
     }
 
     public Iterable<User> getAllUsers() {
         return userRepository.findAll();
     }
+
 
     private void friendshipsUsersChecking(String username1, String username2) throws UserMissingException {
         User u1 = findUserByUsername(username1);
@@ -104,7 +103,7 @@ public class NetworkService implements Observable<UserEvent> {
         friendshipValidator.validate(friendship);
 
         if (friendshipRepository.exists(friendship.getId())) {
-            throw new EntityAlreadyExistsException("Friendship between these users already exists or it's in pending..");
+            throw new EntityAlreadyExistsException("A friend request has already been sent to this user");
         }
 
         friendshipRepository.save(friendship);
@@ -114,6 +113,7 @@ public class NetworkService implements Observable<UserEvent> {
     public Iterable<Friendship> getAllFriendships() {
         return friendshipRepository.findAll();
     }
+
 
     public void removeFriendship(UUID id1, UUID id2)throws EntityMissingException{
         User user1 = findUserById(id1).orElseThrow();
@@ -164,14 +164,17 @@ public class NetworkService implements Observable<UserEvent> {
     public Iterable<User> getAcceptedFriendRequests(UUID id) {
         List<User> friends = new ArrayList<>();
         for (Friendship friendship : friendshipRepository.findAll()) {
-            if (friendship.getId().getE1().equals(id) && friendship.getFriendshipStatus().equals(FriendshipStatus.ACCEPTED)) {
-                userRepository.findOne(friendship.getId().getE2()).ifPresent(friends::add);
-            } else if (friendship.getId().getE2().equals(id) && friendship.getFriendshipStatus().equals(FriendshipStatus.ACCEPTED)) {
-                userRepository.findOne(friendship.getId().getE1()).ifPresent(friends::add);
+            UUID user1 = friendship.getUser1();
+            UUID user2 = friendship.getUser2();
+            if (user1.equals(id) && friendship.getFriendshipStatus().equals(FriendshipStatus.ACCEPTED)) {
+                userRepository.findOne(user2).ifPresent(friends::add);
+            } else if (user2.equals(id) && friendship.getFriendshipStatus().equals(FriendshipStatus.ACCEPTED)) {
+                userRepository.findOne(user1).ifPresent(friends::add);
             }
         }
         return friends;
     }
+
 
     public Iterable<Friendship> getSentRequests(UUID id) {
         List<Friendship> friendships = new ArrayList<>();
@@ -187,7 +190,7 @@ public class NetworkService implements Observable<UserEvent> {
         return friendships;
     }
 
-    public Iterable<Friendship> getReceivedRequests(UUID id){
+    public List<Friendship> getReceivedRequests(UUID id){
         List<Friendship> friendships = new ArrayList<>();
         for (Friendship friendship : friendshipRepository.findAll() ) {
             UUID user1 = friendship.getUser1();
@@ -204,6 +207,9 @@ public class NetworkService implements Observable<UserEvent> {
 
     public void  acceptFriendRequest(Tuple<UUID, UUID> id){
         Friendship friendship = friendshipRepository.findOne(id).orElseThrow();
+        if(!friendship.getFriendshipStatus().equals(FriendshipStatus.PENDING)){
+            throw new IllegalArgumentException("You cannot accept this friend request!");
+        }
         friendship.setFriendshipStatus(FriendshipStatus.ACCEPTED);
         friendship.setFriendsFrom(LocalDateTime.now());
 
@@ -223,20 +229,4 @@ public class NetworkService implements Observable<UserEvent> {
 
     }
 
-
-
-    @Override
-    public void addObserver(Observer<UserEvent> observer) {
-        observers.add(observer);
-    }
-
-    @Override
-    public void removeObserver(Observer<UserEvent> observer) {
-        observers.remove(observer);
-    }
-
-    @Override
-    public void notifyObservers(UserEvent event) {
-        observers.forEach(o -> o.update(event));
-    }
 }

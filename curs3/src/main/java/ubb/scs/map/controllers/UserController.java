@@ -1,46 +1,32 @@
 package ubb.scs.map.controllers;
 
-import javafx.beans.property.SimpleListProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
+import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.GridPane;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
-import ubb.scs.map.domain.Friendship;
-import ubb.scs.map.domain.FriendshipStatus;
-import ubb.scs.map.domain.Tuple;
-import ubb.scs.map.domain.User;
+import ubb.scs.map.domain.*;
 import ubb.scs.map.domain.exceptions.EntityAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.EntityMissingException;
 import ubb.scs.map.domain.exceptions.UserMissingException;
-import ubb.scs.map.domain.validators.FriendshipValidator;
-import ubb.scs.map.domain.validators.UserValidator;
 import ubb.scs.map.domain.validators.ValidationException;
-import ubb.scs.map.domain.validators.Validator;
-import ubb.scs.map.event.UserEvent;
-import ubb.scs.map.observer.Observer;
-import ubb.scs.map.repository.Repository;
-import ubb.scs.map.repository.database.FriendshipRepositoryDatabase;
-import ubb.scs.map.repository.database.UserRepositoryDatabase;
+import ubb.scs.map.service.MessageService;
 import ubb.scs.map.service.NetworkService;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.net.URL;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class UserController implements Observer<UserEvent> {
-    static User activeUser;
+
+public class UserController implements Initializable {
+    private User activeUser;
     public Label welcomeLabel;
     public Button buttonSendFriendRequest;
     public Button buttonRemoveFriend;
@@ -73,23 +59,51 @@ public class UserController implements Observer<UserEvent> {
 
     public Button buttonDeleteFriendRequest;
     public Button buttonDeleteAccount;
+    public Button buttonLogOut;
 
-    private NetworkService networkService;
     ObservableList<User> usersModel = FXCollections.observableArrayList();
     ObservableList<User> friendsModel = FXCollections.observableArrayList();
     ObservableList<Friendship> receivedFriendRequestModel = FXCollections.observableArrayList();
     ObservableList<Friendship> sentFriendRequestModel = FXCollections.observableArrayList();
 
-    static void setActiveUser(User activeUser) {
-        UserController.activeUser = activeUser;
+
+    private NetworkService networkService;
+
+
+    public void setNetworkService(NetworkService networkService) {
+        this.networkService = networkService;
+    }
+
+    public void setMessageService(MessageService messageService) {
+        this.messageService = messageService;
+    }
+
+    public void initApp(User newUser) {
+        this.activeUser = newUser;
+        welcomeLabel.setText("Welcome, " + activeUser.getUsername() + "!");
+        setupUserTable();
+        setupFriendTable();
+        setupReceivedFriendRequestsTable();
+        setupSentFriendRequestsTable();
+        initFriendsList();
+    }
+
+    @Override
+    public void initialize(URL url, ResourceBundle rb) {
+        usersTable.setItems(usersModel);
+        friendsTable.setItems(friendsModel);
+        receivedFriendRequestsTable.setItems(receivedFriendRequestModel);
+        sentFriendRequestsTable.setItems(sentFriendRequestModel);
+        friendsList.setItems(friendsListModel);
+        messagesList.setItems(messagesModel);
     }
 
     private void initFriends() {
+        //actualizez continutul listei
         Iterable<User> users = networkService.getAcceptedFriendRequests(activeUser.getId());
         List<User> usersList = StreamSupport.stream(users.spliterator(), false)
                 .collect(Collectors.toList());
         friendsModel.setAll(usersList);
-        friendsTable.refresh();
     }
 
 
@@ -99,16 +113,14 @@ public class UserController implements Observer<UserEvent> {
                 .filter(user -> !Objects.equals(user.getId(), activeUser.getId()))
                 .collect(Collectors.toList());
         usersModel.setAll(usersList);
-        usersTable.refresh();
     }
 
 
-    private void initReceivedRequests(){
+    private void initReceivedRequests() {
         Iterable<Friendship> friendships = networkService.getReceivedRequests(activeUser.getId());
         List<Friendship> friendRequestsList = StreamSupport.stream(friendships.spliterator(), false)
                 .collect(Collectors.toList());
         receivedFriendRequestModel.setAll(friendRequestsList);
-        receivedFriendRequestsTable.refresh();
     }
 
     private void initSentRequests() {
@@ -117,93 +129,75 @@ public class UserController implements Observer<UserEvent> {
                 .filter(friendship -> !friendship.getFriendshipStatus().equals(FriendshipStatus.ACCEPTED))
                 .collect(Collectors.toList());
         sentFriendRequestModel.setAll(friendRequestsList);
-        sentFriendRequestsTable.refresh();
     }
 
 
-
-    @FXML
-    public void initialize() {
-        final String url = "jdbc:postgresql://localhost:5432/social_network";
-        final String username = "postgres";
-        final String password = "postgres";
-
-        Repository<UUID, User> userRepository = new UserRepositoryDatabase(url, username, password);
-        Repository<Tuple<UUID, UUID>, Friendship> friendshipRepository = new FriendshipRepositoryDatabase(url, username, password);
-        Validator<User> userValidator = new UserValidator();
-        Validator<Friendship> friendshipValidator = new FriendshipValidator();
-        NetworkService usersService = new NetworkService(userRepository, friendshipRepository, userValidator, friendshipValidator);
-        this.networkService = usersService;
-        usersService.addObserver(this);
-
-        friendColumnUsername.setCellValueFactory(new PropertyValueFactory<>("username"));
-        friendColumnFirstName.setCellValueFactory(new PropertyValueFactory<>("firstName"));
-        friendColumnLastName.setCellValueFactory(new PropertyValueFactory<>("lastName"));
-        friendsTable.setItems(friendsModel);
-        initFriends();
-
+    private void setupUserTable() {
+        //configurez coloane si initializez datele in tabel
         userColumnUsername.setCellValueFactory(new PropertyValueFactory<>("username"));
         userColumnFirstName.setCellValueFactory(new PropertyValueFactory<>("firstName"));
         userColumnLastName.setCellValueFactory(new PropertyValueFactory<>("lastName"));
-        usersTable.setItems(usersModel);
         initUsers();
+    }
 
+    private void setupFriendTable() {
+        friendColumnUsername.setCellValueFactory(new PropertyValueFactory<>("username"));
+        friendColumnFirstName.setCellValueFactory(new PropertyValueFactory<>("firstName"));
+        friendColumnLastName.setCellValueFactory(new PropertyValueFactory<>("lastName"));
+        initFriends();
+    }
+
+    private void setupSentFriendRequestsTable() {
         sentFriendRequestsFirstName.setCellValueFactory(cellData -> {
-            UUID senderId = cellData.getValue().getIdSender(); // Expeditorul cererii
-            UUID receiverId = cellData.getValue().getUser1().equals(senderId)
-                    ? cellData.getValue().getUser2()
-                    : cellData.getValue().getUser1(); // Destinatarul este celălalt utilizator
+            Friendship friendship = cellData.getValue();
+            UUID receiverId = getRecipientId(friendship);
             Optional<User> receiver = networkService.findUserById(receiverId);
-            return receiver.map(user -> new SimpleStringProperty(user.getFirstName()))
-                    .orElse(new SimpleStringProperty("Unknown"));
+            return receiver.map(user -> new SimpleStringProperty(user.getFirstName())).orElse(new SimpleStringProperty("Unknown"));
         });
+
         sentFriendRequestsLastName.setCellValueFactory(cellData -> {
-            UUID senderId = cellData.getValue().getIdSender(); // Expeditorul cererii
-            UUID receiverId = cellData.getValue().getUser1().equals(senderId)
-                    ? cellData.getValue().getUser2()
-                    : cellData.getValue().getUser1(); // Destinatarul este celălalt utilizator
+            Friendship friendship = cellData.getValue();
+            UUID receiverId = getRecipientId(friendship);
             Optional<User> receiver = networkService.findUserById(receiverId);
-            return receiver.map(user -> new SimpleStringProperty(user.getLastName()))
-                    .orElse(new SimpleStringProperty("Unknown"));
+            return receiver.map(user -> new SimpleStringProperty(user.getLastName())).orElse(new SimpleStringProperty("Unknown"));
         });
+
         sentFriendRequestsDate.setCellValueFactory(new PropertyValueFactory<>("friendsFrom"));
         sentFriendRequestsStatus.setCellValueFactory(new PropertyValueFactory<>("friendshipStatus"));
-        sentFriendRequestsTable.setItems(sentFriendRequestModel);
         initSentRequests();
+    }
 
+    private void setupReceivedFriendRequestsTable() {
         receivedFriendRequestsFirstName.setCellValueFactory(cellData -> {
             UUID senderId = cellData.getValue().getIdSender();
             Optional<User> sender = networkService.findUserById(senderId);
             return sender.map(user -> new SimpleStringProperty(user.getFirstName()))
                     .orElse(new SimpleStringProperty("Unknown"));
         });
+
         receivedFriendRequestsLastName.setCellValueFactory(cellData -> {
             UUID senderId = cellData.getValue().getIdSender();
             Optional<User> sender = networkService.findUserById(senderId);
             return sender.map(user -> new SimpleStringProperty(user.getLastName()))
                     .orElse(new SimpleStringProperty("Unknown"));
         });
+
         receivedFriendRequestsDate.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getFriendsFrom().toString()));
         receivedFriendRequestsStatus.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getFriendshipStatus().name()));
-        receivedFriendRequestsTable.setItems(receivedFriendRequestModel);
-        initReceivedRequests();
-
-        welcomeLabel.setText("Welcome, " + activeUser.getFirstName() + " " + activeUser.getLastName());
-        friendsTable.refresh();
-        usersTable.refresh();
-        receivedFriendRequestsTable.refresh();
-        sentFriendRequestsTable.refresh();
-    }
-
-    @Override
-    public void update(UserEvent event) {
-        initFriends();
-        initUsers();
         initReceivedRequests();
     }
+
+    public UUID getRecipientId(Friendship friendship) {
+        if (friendship.isSender(friendship.getUser1())) {
+            return friendship.getUser2();
+        } else {
+            return friendship.getUser1();
+        }
+    }
+
 
     public void handleRemoveFriend(ActionEvent event) {
-        User user = (User) friendsTable.getSelectionModel().getSelectedItem();
+        User user = friendsTable.getSelectionModel().getSelectedItem();
         if (user != null) {
             try {
                 networkService.removeFriendship(user.getId(), activeUser.getId());
@@ -222,34 +216,55 @@ public class UserController implements Observer<UserEvent> {
     public void handleSendRequest(ActionEvent event) {
         try {
             User user = usersTable.getSelectionModel().getSelectedItem();
-            if(user != null){
+            if (user != null) {
                 User newFriend = networkService.findUserByUsername(user.getUsername());
                 Friendship friendship = new Friendship(activeUser.getId(), newFriend.getId());
                 friendship.setSender(activeUser.getId());
+
                 networkService.createFriendship(friendship);
                 messageToUser.setText("Friend request sent to " + newFriend.getUsername());
+
+
                 initSentRequests();
-            }else{
+                initReceivedRequests();
+            } else {
                 messageToUser.setText("Select an user from the available users table");
             }
         } catch (ValidationException | UserMissingException | EntityAlreadyExistsException e) {
             messageToUser.setText(e.getMessage());
         }
+
     }
 
-    public void handleDeleteFriendRequest(ActionEvent event){
+
+    public void sendNotification(Friendship friendship) {
+        User sender = networkService.findUserById(friendship.getIdSender()).orElseThrow();
+        String message = "You have a new friend request from: "  + sender.getFirstName() + " " + sender.getLastName();
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("New friend request");
+        alert.setHeaderText(message);
+        alert.show();
+
+        friendship.setNotificationSent(true);
+        networkService.updateFriendship(friendship);
+    }
+
+
+    public void handleDeleteFriendRequest(ActionEvent event) {
         Friendship friendship = sentFriendRequestsTable.getSelectionModel().getSelectedItem();
-        if( friendship != null){
-            try{
+        if (friendship != null) {
+            try {
                 networkService.removeFriendRequest(friendship.getId().getE1(), friendship.getId().getE2());
                 messageToUser.setText("Friend request deleted");
                 initSentRequests();
-            }catch(EntityMissingException | IllegalArgumentException e){
+            } catch (EntityMissingException | IllegalArgumentException e) {
                 messageToUser.setText(e.getMessage());
             }
-        }else{
+        } else {
             messageToUser.setText("Select a friend request from the table first!");
         }
+
     }
 
     public void handleAcceptFriendRequest(ActionEvent event) {
@@ -268,54 +283,135 @@ public class UserController implements Observer<UserEvent> {
         }
     }
 
-    public void handleDeclineFriendRequest(ActionEvent event){
+    public void handleDeclineFriendRequest(ActionEvent event) {
         Friendship friendship = receivedFriendRequestsTable.getSelectionModel().getSelectedItem();
-        if(friendship != null){
-            try{
+        if (friendship != null) {
+            try {
                 networkService.declineFriendRequest(friendship.getId());
                 initReceivedRequests();
                 initFriends();
                 messageToUser.setText("Friend request declined");
-            }catch(EntityMissingException | IllegalArgumentException e){
+            } catch (EntityMissingException | IllegalArgumentException e) {
                 messageToUser.setText(e.getMessage());
             }
-        }else{
+        } else {
             messageToUser.setText("Select a friend request first");
         }
     }
 
-//    public void handleDeleteAccount(ActionEvent event) throws IOException {
-//        try {
 
-//            networkService.deleteUser(activeUser.getId());
-//
-//            messageToUser.setText("Account deleted successfully");
-//
-//
-//            Stage currentStage = (Stage) ((Button) event.getSource()).getScene().getWindow();
-//            currentStage.close();
-//
-//            //openLogInWindow();
-//
-//        } catch (Exception e) {
-//            messageToUser.setText("Error deleting account: " + e.getMessage());
-//        }
-//    }
+    public void handleDeleteAccount(ActionEvent event) throws IOException {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Confirmation");
+        alert.setHeaderText("Are you sure you want to delete your account?");
 
-//    private void openLogInWindow() {
-//        try {
-//            FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/log-in.fxml"));
-//            Parent root = loader.load();
-//
-//            Stage logInStage = new Stage();
-//            logInStage.setScene(new Scene(root));
-//            logInStage.setTitle("Log In");
-//            logInStage.show();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            throw new RuntimeException("Error loading log-in window", e);
-//        }
-//    }
+        alert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.YES) {
+                try {
+                    networkService.deleteUser(activeUser.getId());
+                    messageToUser.setText("Account deleted successfully");
 
+                    Stage currentStage = (Stage) ((Button) event.getSource()).getScene().getWindow();
+                    currentStage.close();
+                } catch (Exception e) {
+                    messageToUser.setText("Error deleting account: " + e.getMessage());
+                }
+            } else {
+                messageToUser.setText("We are glad you've changed your mind.");
+            }
+        });
+    }
+
+    public void handleLogOut(ActionEvent event) {
+        Stage currentStage = (Stage) ((Button) event.getSource()).getScene().getWindow();
+        currentStage.close();
+    }
+
+    private MessageService messageService;
+    public Button buttonSendMessage;
+    public TextField messageTextField;
+
+    ObservableList<Message> messagesModel = FXCollections.observableArrayList();
+    ObservableList<String> friendsListModel = FXCollections.observableArrayList();
+
+    public ListView<String> friendsList = new ListView<>();
+    public ListView<Message> messagesList = new ListView<>();
+
+
+    @FXML
+    private Label chatWithLabel;
+    @FXML
+    private TextArea chatTextArea;
+
+    String chatWith;
+
+
+    private void initFriendsList() {
+        Iterable<User> friends = networkService.getAcceptedFriendRequests(activeUser.getId());
+        List<String> usernames = StreamSupport.stream(friends.spliterator(), false)
+                .map(User::getUsername)
+                .collect(Collectors.toList());
+        friendsListModel.setAll(usernames);
+    }
+
+    private List<Message> initMessages() {
+        User chatWithUser = networkService.findUserByUsername(chatWith);
+        Iterable<Message> messages = messageService.getMessagesBetween(activeUser.getId(), chatWithUser.getId());
+        List<Message> messagesList = StreamSupport.stream(messages.spliterator(), false)
+                .collect(Collectors.toList());
+        messagesModel.setAll(messagesList);
+        return messagesList;
+
+    }
+
+    public void handelSendMessage() {
+        String text = messageTextField.getText();
+        if (!text.isEmpty()) {
+            messageTextField.clear();
+
+            List<User> to = new ArrayList<>();
+
+            chatWith = friendsList.getSelectionModel().getSelectedItem();
+            User recipient = networkService.findUserByUsername(chatWith);
+            to.add(recipient);
+
+            Message message = new Message(activeUser, to, text);
+            message.setFrom(activeUser);
+            messageService.addMessage(message);
+
+            chatTextArea.appendText("You: " + message.getText() + "\n");
+            messagesModel.add(message);
+            //initMessages();
+
+        } else {
+            messageToUser.setText("Select a friends first and type a message");
+        }
+    }
+
+
+    public void handleFriendSelection(MouseEvent mouseEvent) {
+        chatWith = friendsList.getSelectionModel().getSelectedItem();
+        if (chatWith != null) {
+            chatTextArea.clear();
+            chatWithLabel.setText("Chatting with: " + chatWith);
+
+            messagesList.setItems(messagesModel);
+
+            List<Message> messages = initMessages();
+            formatMessages(messages);
+
+        }
+    }
+
+    private void formatMessages(List<Message> messages) {
+        for (Message message : messages) {
+            if (message.getFrom().getId().equals(activeUser.getId())) {
+                chatTextArea.appendText("You: " + message.getText() + "\n");
+            } else {
+                chatTextArea.appendText(chatWith + ": " + message.getText() + "\n");
+            }
+        }
+
+    }
 
 }

@@ -11,7 +11,7 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-public class FriendshipRepositoryDatabase implements Repository<Tuple<UUID, UUID>, Friendship> {
+public class FriendshipRepositoryDatabase implements Repository<Tuple<UUID,UUID>, Friendship> {
     private final String url;
     private final String username;
     private final String password;
@@ -22,35 +22,35 @@ public class FriendshipRepositoryDatabase implements Repository<Tuple<UUID, UUID
         this.password = password;
     }
 
-    // Extrage entitățile din ResultSet și convertește UUID-urile
     private Friendship extractEntityFromResultSet(ResultSet resultSet) throws SQLException {
         UUID firstUserId = resultSet.getObject("first_user", UUID.class);
         UUID secondUserId = resultSet.getObject("second_user", UUID.class);
         LocalDateTime friendshipDate = resultSet.getTimestamp("friends_from").toLocalDateTime();
         FriendshipStatus status = FriendshipStatus.valueOf(resultSet.getString("status"));
         UUID senderId = resultSet.getObject("sender", UUID.class);
+        boolean isNotificationSent = resultSet.getBoolean("notification_sent");
 
         Friendship friendship = new Friendship(firstUserId, secondUserId, friendshipDate, status);
         friendship.setSender(senderId);
+        friendship.setNotificationSent(isNotificationSent);
         return friendship;
     }
 
-    // Salvează o prietenie, utilizând UUID
     @Override
     public Optional<Friendship> save(Friendship entity) {
         if (exists(entity.getId())) {
             throw new EntityAlreadyExistsException(entity.getId().getE1() + " is already friends with " + entity.getId().getE2());
         }
 
-        String sql = "INSERT INTO friendships (first_user, second_user, friends_from, status, sender) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO friendships (first_user, second_user, friends_from, status, sender, notification_sent) VALUES (?, ?, ?, ?, ?,?)";
         try (Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            // Salvăm UUID-urile direct, fără conversia în String
-            preparedStatement.setObject(1, entity.getId().getE1());  // UUID
-            preparedStatement.setObject(2, entity.getId().getE2());  // UUID
+            preparedStatement.setObject(1, entity.getId().getE1());
+            preparedStatement.setObject(2, entity.getId().getE2());
             preparedStatement.setTimestamp(3, Timestamp.valueOf(entity.getFriendsFrom()));
             preparedStatement.setString(4, entity.getFriendshipStatus().name());
-            preparedStatement.setObject(5, entity.getIdSender());  // UUID
+            preparedStatement.setObject(5, entity.getIdSender());
+            preparedStatement.setBoolean(6, entity.isNotificationSent());
             preparedStatement.executeUpdate();
         } catch (SQLException sqlException) {
             sqlException.printStackTrace();
@@ -123,13 +123,14 @@ public class FriendshipRepositoryDatabase implements Repository<Tuple<UUID, UUID
     @Override
     public Optional<Friendship> update(Friendship entity) {
         findOne(entity.getId()).orElseThrow(() -> new EntityMissingException(entity.getId() + " does not exist!"));
-        String sql = "UPDATE friendships SET status = ?, friends_from = ? WHERE first_user = ? AND second_user = ?";
+        String sql = "UPDATE friendships SET status = ?, friends_from = ?, notification_sent = ? WHERE first_user = ? AND second_user = ?";
         try (Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, entity.getFriendshipStatus().name());
             preparedStatement.setTimestamp(2, Timestamp.valueOf(entity.getFriendsFrom()));
-            preparedStatement.setObject(3, entity.getId().getE1());
-            preparedStatement.setObject(4, entity.getId().getE2());
+            preparedStatement.setBoolean(3, entity.isNotificationSent());
+            preparedStatement.setObject(4, entity.getId().getE1());
+            preparedStatement.setObject(5, entity.getId().getE2());
             preparedStatement.executeUpdate();
         } catch (SQLException sqlException) {
             sqlException.printStackTrace();

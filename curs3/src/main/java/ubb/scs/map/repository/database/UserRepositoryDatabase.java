@@ -23,7 +23,6 @@ public class UserRepositoryDatabase implements Repository<UUID, User> {
         this.password = password;
     }
 
-    // Extrage UUID-ul ca String și convertește-l înapoi în UUID
     private User extractEntityFromResultSet(ResultSet resultSet) throws SQLException {
         UUID id = resultSet.getObject("id", UUID.class);
         String username = resultSet.getString("username");
@@ -31,7 +30,7 @@ public class UserRepositoryDatabase implements Repository<UUID, User> {
         String lastName = resultSet.getString("last_name");
         String password = resultSet.getString("password");;
         User user = new User(username, firstName, lastName, password);
-        user.setId(id); // Setează ID-ul convertit
+        user.setId(id);
         return user;
     }
 
@@ -40,7 +39,7 @@ public class UserRepositoryDatabase implements Repository<UUID, User> {
         String sql = "SELECT * FROM users WHERE id = ?";
         try (Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setObject(1, id); // Setează UUID ca String
+            preparedStatement.setObject(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
 
             if (!resultSet.next()) {
@@ -80,7 +79,6 @@ public class UserRepositoryDatabase implements Repository<UUID, User> {
         String sql = "INSERT INTO users (id, username, first_name, last_name, password) VALUES (?, ?, ?, ?, ?)";
         try (Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            // Salvăm UUID-ul ca String
             preparedStatement.setObject(1, entity.getId());
             preparedStatement.setString(2, entity.getUsername());
             preparedStatement.setString(3, entity.getFirstName());

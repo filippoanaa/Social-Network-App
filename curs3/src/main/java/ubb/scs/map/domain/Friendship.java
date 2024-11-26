@@ -10,6 +10,7 @@ public class Friendship extends Entity<Tuple<UUID, UUID>> {
     private LocalDateTime friendsFrom;
     private FriendshipStatus friendshipStatus;
     private UUID idSender;
+    private boolean notificationSent;
 
 
     public Friendship(UUID idUser1, UUID idUser2, LocalDateTime friendsFrom, FriendshipStatus friendshipStatus) {
@@ -70,8 +71,13 @@ public class Friendship extends Entity<Tuple<UUID, UUID>> {
 
     public UUID getIdSender() { return idSender; }
 
+    public boolean isNotificationSent() {
+        return notificationSent;
+    }
 
-
+    public void setNotificationSent(boolean notificationSent) {
+        this.notificationSent = notificationSent;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -85,4 +91,6 @@ public class Friendship extends Entity<Tuple<UUID, UUID>> {
     public int hashCode() {
         return Objects.hash(idUser1, idUser2, friendsFrom, friendshipStatus, idSender);
     }
+
+
 }

@@ -12,7 +12,6 @@ public class User extends Entity<UUID>{
     private String password;
     private List<User> friends;
 
-    public User() {}
     public User(String username, String firstName, String lastName, String password) {
         this.username = username;
         this.firstName = firstName;
