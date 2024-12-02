@@ -7,8 +7,6 @@ import ubb.scs.map.repository.database.MessageRepositoryDatabase;
 import ubb.scs.map.repository.database.UserRepositoryDatabase;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class MessageService {
     private final MessageRepositoryDatabase messageRepositoryDatabase;
@@ -19,7 +17,7 @@ public class MessageService {
         this.userRepositoryDatabase = userRepositoryDatabase;
     }
 
-    public boolean addMessage(Message message) {
+    public void addMessage(Message message) {
         if(!userRepositoryDatabase.exists(message.getFrom().getId()))
             throw new UserMissingException("Sender does not exits!");
 
@@ -29,48 +27,14 @@ public class MessageService {
             }
         }
 
-        return messageRepositoryDatabase.save(message).isPresent();
+        messageRepositoryDatabase.save(message);
     }
 
-    public void removeMessage(UUID id) {
-        if (!messageRepositoryDatabase.exists(id)) {
-            throw new IllegalArgumentException("Message with ID " + id + " does not exist");
-        }
-
-        messageRepositoryDatabase.delete(id);
-    }
 
     public Iterable<Message> getMessages() {
-
-        Iterable<Message> messages = messageRepositoryDatabase.findAll();
-        int cnt = 0;
-        for(Message m : messages)
-            cnt++;
-        System.out.println("Nr mesaje:" + cnt);
-        return messages;
-
+        return messageRepositoryDatabase.findAll();
     }
 
-//    public List<Message> getMessagesBetween(UUID id1, UUID id2) {
-//        List<Message> messages = new ArrayList<>();
-//
-//        Iterable<Message> allMessages = messageRepositoryDatabase.findAll();
-//        for(Message message : allMessages){
-//            if(isMessageBetweenUsers(message, id1, id2))
-//                messages.add(message);
-//        }
-//        messages.sort(Comparator.comparing(Message::getDate));
-//        return messages;
-//
-//    }
-//
-//    private boolean isMessageBetweenUsers(Message message, UUID senderId, UUID receiverId) {
-//        boolean isSenderReceiver = (message.getFrom().getId().equals(senderId) &&
-//                message.getTo().stream().anyMatch(user -> user.getId().equals(receiverId))) ||
-//                (message.getFrom().getId().equals(receiverId) &&
-//                        message.getTo().stream().anyMatch(user -> user.getId().equals(senderId)));
-//        return isSenderReceiver;
-//    }
 
     public List<Message> getMessagesBetween(UUID id1, UUID id2){
         List<Message> messages = messageRepositoryDatabase.findMessagesBetween(id1, id2);
@@ -81,4 +45,10 @@ public class MessageService {
 
     }
 
+    public void deleteConversation(UUID id, UUID id1) {
+        List<Message> messages = messageRepositoryDatabase.findMessagesBetween(id, id1);
+        for(Message message : messages){
+            messageRepositoryDatabase.delete(message.getId());
+        }
+    }
 }

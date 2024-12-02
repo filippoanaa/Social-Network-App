@@ -12,7 +12,7 @@
 
 /* Stil pentru label (textul de feedback sau alte etichete) */
 .label {
-    -fx-font-size: 14px;
+    -fx-font-size: 10px;
     -fx-text-fill: #3f51b5; /* Culoare textului albastru închis */
     -fx-font-weight: bold; /* Text îngroșat pentru impact vizual */
     -fx-effect: dropshadow(gaussian, rgba(63, 81, 181, 0.5), 3, 0, 3, 1); /* Umbra discretă */

@@ -57,9 +57,6 @@ public class MessageRepositoryDatabase implements Repository<UUID, Message> {
         message.setId(id);
         return message;
 
-
-
-
     }
 
     @Override
@@ -67,6 +64,7 @@ public class MessageRepositoryDatabase implements Repository<UUID, Message> {
         String sql = "SELECT * FROM messages WHERE id = ?";
         try (Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setObject(1, uuid);
             ResultSet resultSet = preparedStatement.executeQuery();
             if (!resultSet.next())
                 throw new EntityMissingException("Message with id " + uuid + " does not exist");
@@ -129,10 +127,10 @@ public class MessageRepositoryDatabase implements Repository<UUID, Message> {
     @Override
     public Optional<Message> save(Message entity) {
         String sqlMessage = "INSERT INTO messages(id, from_id, text, date,  reply_message_id) VALUES (?, ?, ?, ?, ?) ";
-        String sqlUserMessages = "INSERT INTO users_messages(to_id, message_id) VALUES (?, ?)";
+        String sqlUsersMessages = "INSERT INTO users_messages(to_id, message_id) VALUES (?, ?)";
         try (Connection connection = DriverManager.getConnection(url, username, password);
              PreparedStatement messageStatement = connection.prepareStatement(sqlMessage);
-             PreparedStatement userMessagesStatement = connection.prepareStatement(sqlUserMessages)) {
+             PreparedStatement userMessagesStatement = connection.prepareStatement(sqlUsersMessages)) {
 
             messageStatement.setObject(1, entity.getId());
             messageStatement.setObject(2, entity.getFrom().getId());
@@ -181,11 +179,6 @@ public class MessageRepositoryDatabase implements Repository<UUID, Message> {
 
     @Override
     public boolean exists(UUID uuid) {
-        try{
-            findOne(uuid);
-            return true;
-        }catch (Exception e){
-            return false;
-        }
+        return false;
     }
 }

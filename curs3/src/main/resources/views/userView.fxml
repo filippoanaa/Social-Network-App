@@ -2,6 +2,7 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
 
 <VBox prefHeight="600.0" prefWidth="600.0" spacing="10" stylesheets="/style/appStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ubb.scs.map.controllers.UserController">
     <Label fx:id="welcomeLabel" alignment="CENTER" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
@@ -90,6 +91,32 @@
                 </content>
             </Tab>
 
+            <Tab text="Messages">
+                <SplitPane dividerPositions="0.3" prefHeight="550.0" prefWidth="800.0">
+                    <VBox prefWidth="250.0" spacing="10">
+                        <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Inbox" />
+                        <ListView fx:id="usersList" onMouseClicked="#handleFriendSelection" prefHeight="172.0" prefWidth="177.0" />
+                  <Label prefHeight="17.0" prefWidth="179.0" text="Send message to multiple users">
+                     <font>
+                        <Font name="System Bold" size="10.0" />
+                     </font>
+                  </Label>
+                        <ListView fx:id="multiUserSelectionList" prefHeight="221.0" prefWidth="177.0" />
+
+                    </VBox>
+
+                    <VBox prefWidth="550.0" spacing="10">
+                        <Label fx:id="chatWithLabel" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Select a friend to chat with" />
+                        <ListView fx:id="messagesList" />
+                        <HBox spacing="10">
+                            <TextField fx:id="messageTextField" promptText="Type a message..." />
+                            <Button fx:id="buttonSendMessage" onAction="#handleSendMessage" text="Send" />
+                             <Button fx:id="buttonDeleteConversation" mnemonicParsing="false" onAction="#handleDeleteConversation" prefHeight="25.0" prefWidth="171.0" text="Delete conversation" />
+                        </HBox>
+                    </VBox>
+                </SplitPane>
+            </Tab>
+
             <Tab text="Account settings">
                 <content>
                     <VBox alignment="CENTER" spacing="10">
@@ -99,25 +126,6 @@
                 </content>
             </Tab>
 
-            <Tab text="Messages">
-                <SplitPane prefHeight="550.0" prefWidth="800.0" dividerPositions="0.3">
-                    <!-- Prietenii utilizatorului -->
-                    <VBox prefWidth="250.0" spacing="10">
-                        <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Friends" />
-                        <ListView fx:id="friendsList" onMouseClicked="#handleFriendSelection" prefHeight="500.0" />
-                    </VBox>
-
-                    <!-- Chat-ul -->
-                    <VBox prefWidth="550.0" spacing="10">
-                        <Label fx:id="chatWithLabel" style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Select a friend to chat with" />
-                        <TextArea fx:id="chatTextArea" prefHeight="400.0" editable="false" wrapText="true" />
-                        <HBox spacing="10">
-                            <TextField fx:id="messageTextField" promptText="Type a message..." />
-                            <Button fx:id="buttonSendMessage" text="Send" onAction="#handelSendMessage" />
-                        </HBox>
-                    </VBox>
-                </SplitPane>
-            </Tab>
         </tabs>
     </TabPane>
 

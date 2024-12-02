@@ -45,6 +45,8 @@ public class LogInController {
 
 
     public void handleLogInButton(ActionEvent event) throws IOException {
+        messageToUser.setText("");
+
         String username = usernameText.getText();
         String password = passwordText.getText();
         try {
@@ -79,7 +81,6 @@ public class LogInController {
             for (Friendship friendship : pendingRequests) {
                 if (!friendship.isNotificationSent()) {
                     userController.sendNotification(friendship);
-
                 }
             }
 
@@ -99,6 +100,8 @@ public class LogInController {
     }
 
     public void handleSignUp(ActionEvent event) throws IOException {
+        messageToUser.setText("");
+
         FXMLLoader loader = new FXMLLoader();
         loader.setLocation(getClass().getResource("/views/signUp.fxml"));
         Stage stage = new Stage();

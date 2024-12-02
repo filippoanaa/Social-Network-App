@@ -10,7 +10,10 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
-import ubb.scs.map.domain.*;
+import ubb.scs.map.domain.Friendship;
+import ubb.scs.map.domain.FriendshipStatus;
+import ubb.scs.map.domain.Message;
+import ubb.scs.map.domain.User;
 import ubb.scs.map.domain.exceptions.EntityAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.EntityMissingException;
 import ubb.scs.map.domain.exceptions.UserMissingException;
@@ -85,7 +88,8 @@ public class UserController implements Initializable {
         setupFriendTable();
         setupReceivedFriendRequestsTable();
         setupSentFriendRequestsTable();
-        initFriendsList();
+        initUsersList();
+        initMultiUserSelectionList();
     }
 
     @Override
@@ -94,7 +98,7 @@ public class UserController implements Initializable {
         friendsTable.setItems(friendsModel);
         receivedFriendRequestsTable.setItems(receivedFriendRequestModel);
         sentFriendRequestsTable.setItems(sentFriendRequestModel);
-        friendsList.setItems(friendsListModel);
+        usersList.setItems(usersListModel);
         messagesList.setItems(messagesModel);
     }
 
@@ -197,6 +201,7 @@ public class UserController implements Initializable {
 
 
     public void handleRemoveFriend(ActionEvent event) {
+        messageToUser.setText("");
         User user = friendsTable.getSelectionModel().getSelectedItem();
         if (user != null) {
             try {
@@ -214,6 +219,7 @@ public class UserController implements Initializable {
 
 
     public void handleSendRequest(ActionEvent event) {
+        messageToUser.setText("");
         try {
             User user = usersTable.getSelectionModel().getSelectedItem();
             if (user != null) {
@@ -238,8 +244,10 @@ public class UserController implements Initializable {
 
 
     public void sendNotification(Friendship friendship) {
+        messageToUser.setText("");
+
         User sender = networkService.findUserById(friendship.getIdSender()).orElseThrow();
-        String message = "You have a new friend request from: "  + sender.getFirstName() + " " + sender.getLastName();
+        String message = "You have a new friend request from: " + sender.getFirstName() + " " + sender.getLastName();
 
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("New friend request");
@@ -252,6 +260,7 @@ public class UserController implements Initializable {
 
 
     public void handleDeleteFriendRequest(ActionEvent event) {
+        messageToUser.setText("");
         Friendship friendship = sentFriendRequestsTable.getSelectionModel().getSelectedItem();
         if (friendship != null) {
             try {
@@ -268,6 +277,7 @@ public class UserController implements Initializable {
     }
 
     public void handleAcceptFriendRequest(ActionEvent event) {
+        messageToUser.setText("");
         Friendship friendship = receivedFriendRequestsTable.getSelectionModel().getSelectedItem();
         if (friendship != null) {
             try {
@@ -284,6 +294,7 @@ public class UserController implements Initializable {
     }
 
     public void handleDeclineFriendRequest(ActionEvent event) {
+        messageToUser.setText("");
         Friendship friendship = receivedFriendRequestsTable.getSelectionModel().getSelectedItem();
         if (friendship != null) {
             try {
@@ -301,12 +312,15 @@ public class UserController implements Initializable {
 
 
     public void handleDeleteAccount(ActionEvent event) throws IOException {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        messageToUser.setText("");
+
+        ButtonType yesButton = new ButtonType("YES", ButtonBar.ButtonData.YES);
+        ButtonType noButton = new ButtonType("NO", ButtonBar.ButtonData.NO);
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to delete your account?", yesButton, noButton);
         alert.setTitle("Confirmation");
-        alert.setHeaderText("Are you sure you want to delete your account?");
 
         alert.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.YES) {
+            if (response == yesButton) {
                 try {
                     networkService.deleteUser(activeUser.getId());
                     messageToUser.setText("Account deleted successfully");
@@ -331,30 +345,31 @@ public class UserController implements Initializable {
     public Button buttonSendMessage;
     public TextField messageTextField;
 
+    ObservableList<String> usersListModel = FXCollections.observableArrayList();
     ObservableList<Message> messagesModel = FXCollections.observableArrayList();
-    ObservableList<String> friendsListModel = FXCollections.observableArrayList();
+    ObservableList<CheckBox> checkBoxList = FXCollections.observableArrayList();
 
-    public ListView<String> friendsList = new ListView<>();
+    public ListView<String> usersList = new ListView<>();
     public ListView<Message> messagesList = new ListView<>();
+    public ListView<CheckBox> multiUserSelectionList = new ListView<>();
 
+    public Button buttonDeleteConversation;
 
     @FXML
-    private Label chatWithLabel;
-    @FXML
-    private TextArea chatTextArea;
-
-    String chatWith;
+    private  Label chatWithLabel;
 
 
-    private void initFriendsList() {
-        Iterable<User> friends = networkService.getAcceptedFriendRequests(activeUser.getId());
-        List<String> usernames = StreamSupport.stream(friends.spliterator(), false)
+    private void initUsersList() {
+        Iterable<User> users = networkService.getAllUsers();
+        List<String> usernames = StreamSupport.stream(users.spliterator(), false)
+                .filter(user -> !user.getId().equals(activeUser.getId()))
                 .map(User::getUsername)
                 .collect(Collectors.toList());
-        friendsListModel.setAll(usernames);
+        usersListModel.setAll(usernames);
     }
 
     private List<Message> initMessages() {
+        String chatWith = usersList.getSelectionModel().getSelectedItem();
         User chatWithUser = networkService.findUserByUsername(chatWith);
         Iterable<Message> messages = messageService.getMessagesBetween(activeUser.getId(), chatWithUser.getId());
         List<Message> messagesList = StreamSupport.stream(messages.spliterator(), false)
@@ -364,54 +379,137 @@ public class UserController implements Initializable {
 
     }
 
-    public void handelSendMessage() {
+    private void initMultiUserSelectionList() {
+        for (User user : networkService.getAllUsers()) {
+            if (!user.getId().equals(activeUser.getId())) {
+                CheckBox checkBox = new CheckBox(user.getUsername());
+                checkBoxList.add(checkBox);
+            }
+        }
+        multiUserSelectionList.setItems(checkBoxList);
+    }
+
+
+    public void handleSendMessage() {
+        messageToUser.setText("");
         String text = messageTextField.getText();
         if (!text.isEmpty()) {
             messageTextField.clear();
 
             List<User> to = new ArrayList<>();
 
-            chatWith = friendsList.getSelectionModel().getSelectedItem();
-            User recipient = networkService.findUserByUsername(chatWith);
-            to.add(recipient);
+            boolean isMultipleUsersSelected = multiUserSelectionList.getItems().stream()
+                    .anyMatch(CheckBox::isSelected);
+
+            String chatWith = usersList.getSelectionModel().getSelectedItem();
+            boolean isOneSingleUserSelected = chatWith != null;
+
+            if (isMultipleUsersSelected && isOneSingleUserSelected) {
+                messageToUser.setText("Please select either a single user or multiple users, not both!");
+
+                for (CheckBox checkBox : multiUserSelectionList.getItems()) {
+                    checkBox.setSelected(false);
+                }
+
+                usersList.getSelectionModel().clearSelection();
+
+                return;
+            }
+
+            if (isMultipleUsersSelected) {
+                for (CheckBox checkBox : multiUserSelectionList.getItems()) {
+                    if (checkBox.isSelected()) {
+                        String username = checkBox.getText();
+                        User user = networkService.findUserByUsername(username);
+                        to.add(user);
+                    }
+                }
+            } else if (isOneSingleUserSelected) {
+                User recipient = networkService.findUserByUsername(chatWith);
+                to.add(recipient);
+
+            } else {
+                messageToUser.setText("Please select at least one recipient.");
+                return;
+            }
+
 
             Message message = new Message(activeUser, to, text);
+
+            Message selectedMessage = messagesList.getSelectionModel().getSelectedItem();
+            if (selectedMessage != null) {
+                message.setReply(selectedMessage);
+                messagesList.getSelectionModel().clearSelection();
+            }
+
             message.setFrom(activeUser);
             messageService.addMessage(message);
-
-            chatTextArea.appendText("You: " + message.getText() + "\n");
             messagesModel.add(message);
-            //initMessages();
 
         } else {
-            messageToUser.setText("Select a friends first and type a message");
+            messageToUser.setText("Type a message before sending.");
         }
+
+        for (CheckBox checkBox : multiUserSelectionList.getItems()) {
+            checkBox.setSelected(false);
+        }
+        usersList.getSelectionModel().clearSelection();
     }
+
 
 
     public void handleFriendSelection(MouseEvent mouseEvent) {
-        chatWith = friendsList.getSelectionModel().getSelectedItem();
+        messageToUser.setText("");
+        String chatWith = usersList.getSelectionModel().getSelectedItem();
         if (chatWith != null) {
-            chatTextArea.clear();
             chatWithLabel.setText("Chatting with: " + chatWith);
 
-            messagesList.setItems(messagesModel);
-
             List<Message> messages = initMessages();
+            if (messages.isEmpty()) {
+                messageToUser.setText("No messages found");
+            }
             formatMessages(messages);
-
         }
     }
+
 
     private void formatMessages(List<Message> messages) {
-        for (Message message : messages) {
-            if (message.getFrom().getId().equals(activeUser.getId())) {
-                chatTextArea.appendText("You: " + message.getText() + "\n");
-            } else {
-                chatTextArea.appendText(chatWith + ": " + message.getText() + "\n");
-            }
-        }
+        messagesModel.setAll(messages);
 
+        messagesList.setCellFactory(listView -> new ListCell<>() {
+            @Override
+            protected void updateItem(Message message, boolean empty) {
+                super.updateItem(message, empty);
+                if (empty || message == null) {
+                    setText(null);
+                } else {
+                    String displayText = "";
+                    if (message.getFrom().equals(activeUser)) {
+                        displayText += "You: " + message.getText();
+                    } else {
+                        displayText += message.getFrom().getUsername() + ": " + message.getText();
+                    }
+                    if (message.getReply() != null) {
+                        displayText += " (Reply to: " + message.getReply().getText() + ")";
+                    }
+                    setText(displayText);
+                }
+            }
+        });
     }
+
+    public void handleDeleteConversation(ActionEvent actionEvent) {
+        messageToUser.setText("");
+        String chatWith = usersList.getSelectionModel().getSelectedItem();
+        if (chatWith != null) {
+            User chatWithUser = networkService.findUserByUsername(chatWith);
+            messageService.deleteConversation(activeUser.getId(), chatWithUser.getId());
+            messageToUser.setText("Conversation deleted successfully");
+            initMessages();
+        } else {
+            messageToUser.setText("Select a conversation from the inbox first");
+        }
+    }
+
 
 }
