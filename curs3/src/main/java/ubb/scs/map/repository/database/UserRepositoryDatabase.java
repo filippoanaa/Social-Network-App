@@ -7,10 +7,7 @@ import ubb.scs.map.domain.exceptions.UserMissingException;
 import ubb.scs.map.repository.Repository;
 
 import java.sql.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public class UserRepositoryDatabase implements Repository<UUID, User> {
     private final String url;
@@ -132,4 +129,7 @@ public class UserRepositoryDatabase implements Repository<UUID, User> {
         }
         return true;
     }
+
+
+
 }

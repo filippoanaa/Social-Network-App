@@ -10,18 +10,21 @@ import ubb.scs.map.domain.exceptions.UserAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.UserMissingException;
 import ubb.scs.map.domain.validators.ValidationException;
 import ubb.scs.map.domain.validators.Validator;
+import ubb.scs.map.repository.FriendshipPagingRepository;
 import ubb.scs.map.repository.Repository;
+import ubb.scs.map.utils.Page;
+import ubb.scs.map.utils.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.*;
 
 public class NetworkService{
     private final Repository<UUID, User> userRepository;
-    private final Repository<Tuple<UUID, UUID>, Friendship> friendshipRepository;
+    private final FriendshipPagingRepository friendshipRepository;
     private final Validator<User> userValidator;
     private final Validator<Friendship> friendshipValidator;
 
-    public NetworkService(Repository<UUID, User> userRepository, Repository<Tuple<UUID, UUID>, Friendship> friendshipRepository, Validator<User> userValidator, Validator<Friendship> friendshipValidator) {
+    public NetworkService(Repository<UUID, User> userRepository, FriendshipPagingRepository friendshipRepository, Validator<User> userValidator, Validator<Friendship> friendshipValidator) {
         this.userRepository = userRepository;
         this.friendshipRepository = friendshipRepository;
         this.userValidator = userValidator;
@@ -52,7 +55,7 @@ public class NetworkService{
     }
 
     public void deleteUser(UUID id) {
-        User user = findUserById(id).orElseThrow();
+        User user = findUserById(id).orElse(null);
         if (user != null) {
             List<Friendship> toDelete = new ArrayList<>();
             friendshipRepository.findAll().forEach(friendship -> {
@@ -61,7 +64,7 @@ public class NetworkService{
                 }
             });
             toDelete.forEach(friendship -> friendshipRepository.delete(friendship.getId()));
-            user.getFriends().forEach(friend -> friend.removeFriend(user));
+           // user.getFriends().forEach(friend -> friend.removeFriend(user));
             userRepository.delete(user.getId());
 
         }else{
@@ -228,5 +231,25 @@ public class NetworkService{
         friendshipRepository.update(friendship);
 
     }
+
+    public Page<User> findAllFriendsOnPage(Pageable pageable, UUID id) {
+        Page<Friendship> friendsPage = friendshipRepository.findAllOnFriendsOnPage(pageable, id);
+
+        List<User> users = new ArrayList<>();
+
+        for (Friendship friendship : friendsPage.getElementsOnPage()) {
+            UUID user1 = friendship.getUser1();
+            UUID user2 = friendship.getUser2();
+
+            if (user1.equals(id)) {
+                userRepository.findOne(user2).ifPresent(users::add);
+            } else if (user2.equals(id)) {
+                userRepository.findOne(user1).ifPresent(users::add);
+            }
+        }
+
+        return new Page<>(users, friendsPage.getTotalNumberOfElements());
+    }
+
 
 }

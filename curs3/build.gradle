@@ -48,7 +48,7 @@ dependencies {
     // (opțional) pentru a permite utilizarea JUnit Vintage pentru testele vechi
     testImplementation 'org.junit.vintage:junit-vintage-engine:5.8.2'
 
-    implementation 'org.postgresql:postgresql:42.6.0'
+    implementation 'org.postgresql:postgresql:42.7.2'
 }
 
 tasks.test {

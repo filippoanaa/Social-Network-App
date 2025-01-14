@@ -5,13 +5,16 @@ import ubb.scs.map.domain.FriendshipStatus;
 import ubb.scs.map.domain.Tuple;
 import ubb.scs.map.domain.exceptions.EntityAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.EntityMissingException;
+import ubb.scs.map.repository.FriendshipPagingRepository;
 import ubb.scs.map.repository.Repository;
+import ubb.scs.map.utils.Page;
+import ubb.scs.map.utils.Pageable;
 
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-public class FriendshipRepositoryDatabase implements Repository<Tuple<UUID,UUID>, Friendship> {
+public class FriendshipRepositoryDatabase implements FriendshipPagingRepository {
     private final String url;
     private final String username;
     private final String password;
@@ -146,5 +149,66 @@ public class FriendshipRepositoryDatabase implements Repository<Tuple<UUID,UUID>
             return false;
         }
         return true;
+    }
+
+    private int countFriendships(Connection connection, UUID id){
+        String sql = "SELECT COUNT(*) FROM friendships WHERE (first_user = ? OR second_user = ? ) and status = ? ";
+        try(PreparedStatement statement = connection.prepareStatement(sql)){
+            statement.setObject(1, id);
+            statement.setObject(2, id);
+            statement.setString(3, FriendshipStatus.ACCEPTED.name());
+
+            ResultSet resultSet = statement.executeQuery();
+
+            int totalNumberOfFriendships = 0;
+
+            if(resultSet.next())
+                totalNumberOfFriendships = resultSet.getInt("count");
+
+            return totalNumberOfFriendships;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private List<Friendship> findAllFriendsOnPage(Connection connection, Pageable pageable, UUID id)  {
+        List<Friendship> friendshipsOnPage = new ArrayList<>();
+        String sql = "SELECT * FROM friendships WHERE (first_user = ? OR second_user = ?) AND status = ? LIMIT ? OFFSET ?";
+        try(PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setObject(1, id);
+            statement.setObject(2, id);
+            statement.setString(3,FriendshipStatus.ACCEPTED.name());
+            statement.setInt(4, pageable.getPageSize());
+            statement.setInt(5, pageable.getPageNumber() * pageable.getPageSize());
+
+            ResultSet resultSet = statement.executeQuery();
+            while(resultSet.next()) {
+                Friendship friendship = extractEntityFromResultSet(resultSet);
+                friendshipsOnPage.add(friendship);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return friendshipsOnPage;
+
+    }
+
+    @Override
+    public Page<Friendship> findAllOnFriendsOnPage(Pageable pageable, UUID id) {
+        try(Connection connection = DriverManager.getConnection(this.url, this.username, this.password)) {
+            int totalNumberOfFriends= countFriendships(connection, id);
+            List<Friendship> friendshipsOnPage ;
+            if(totalNumberOfFriends > 0)
+                friendshipsOnPage = findAllFriendsOnPage(connection, pageable, id);
+            else
+                friendshipsOnPage = new ArrayList<>();
+            return new Page<>(friendshipsOnPage, totalNumberOfFriends);
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

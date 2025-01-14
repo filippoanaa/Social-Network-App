@@ -20,6 +20,8 @@ import ubb.scs.map.domain.exceptions.UserMissingException;
 import ubb.scs.map.domain.validators.ValidationException;
 import ubb.scs.map.service.MessageService;
 import ubb.scs.map.service.NetworkService;
+import ubb.scs.map.utils.Page;
+import ubb.scs.map.utils.Pageable;
 
 import java.io.IOException;
 import java.net.URL;
@@ -57,18 +59,19 @@ public class UserController implements Initializable {
     public TableColumn<Friendship, String> sentFriendRequestsDate;
     public TableColumn<Friendship, String> sentFriendRequestsStatus;
 
+    private ObservableList<User> usersModel = FXCollections.observableArrayList();
+    private ObservableList<User> friendsModel = FXCollections.observableArrayList();
+    private ObservableList<Friendship> receivedFriendRequestModel = FXCollections.observableArrayList();
+    private ObservableList<Friendship> sentFriendRequestModel = FXCollections.observableArrayList();
+
+
     public Button buttonAcceptFriendRequest;
     public Button buttonDeclineFriendRequest;
 
     public Button buttonDeleteFriendRequest;
+
     public Button buttonDeleteAccount;
     public Button buttonLogOut;
-
-    ObservableList<User> usersModel = FXCollections.observableArrayList();
-    ObservableList<User> friendsModel = FXCollections.observableArrayList();
-    ObservableList<Friendship> receivedFriendRequestModel = FXCollections.observableArrayList();
-    ObservableList<Friendship> sentFriendRequestModel = FXCollections.observableArrayList();
-
 
     private NetworkService networkService;
 
@@ -121,6 +124,7 @@ public class UserController implements Initializable {
 
 
     private void initReceivedRequests() {
+
         Iterable<Friendship> friendships = networkService.getReceivedRequests(activeUser.getId());
         List<Friendship> friendRequestsList = StreamSupport.stream(friendships.spliterator(), false)
                 .collect(Collectors.toList());
@@ -148,7 +152,8 @@ public class UserController implements Initializable {
         friendColumnUsername.setCellValueFactory(new PropertyValueFactory<>("username"));
         friendColumnFirstName.setCellValueFactory(new PropertyValueFactory<>("firstName"));
         friendColumnLastName.setCellValueFactory(new PropertyValueFactory<>("lastName"));
-        initFriends();
+        //initFriends();
+        initPageOfFriends();
     }
 
     private void setupSentFriendRequestsTable() {
@@ -206,7 +211,8 @@ public class UserController implements Initializable {
         if (user != null) {
             try {
                 networkService.removeFriendship(user.getId(), activeUser.getId());
-                initFriends();
+                initPageOfFriends();
+                //initFriends();
                 initReceivedRequests();
                 messageToUser.setText("Friend removed successfully");
             } catch (Exception e) {
@@ -284,7 +290,8 @@ public class UserController implements Initializable {
                 networkService.acceptFriendRequest(friendship.getId());
                 messageToUser.setText("Friend request accepted");
                 initReceivedRequests();
-                initFriends();
+                //initFriends();
+                initPageOfFriends();
             } catch (Exception e) {
                 messageToUser.setText(e.getMessage());
             }
@@ -300,7 +307,8 @@ public class UserController implements Initializable {
             try {
                 networkService.declineFriendRequest(friendship.getId());
                 initReceivedRequests();
-                initFriends();
+                //initFriends();
+                initPageOfFriends();
                 messageToUser.setText("Friend request declined");
             } catch (EntityMissingException | IllegalArgumentException e) {
                 messageToUser.setText(e.getMessage());
@@ -356,7 +364,7 @@ public class UserController implements Initializable {
     public Button buttonDeleteConversation;
 
     @FXML
-    private  Label chatWithLabel;
+    private Label chatWithLabel;
 
 
     private void initUsersList() {
@@ -457,7 +465,6 @@ public class UserController implements Initializable {
     }
 
 
-
     public void handleFriendSelection(MouseEvent mouseEvent) {
         messageToUser.setText("");
         String chatWith = usersList.getSelectionModel().getSelectedItem();
@@ -510,6 +517,56 @@ public class UserController implements Initializable {
             messageToUser.setText("Select a conversation from the inbox first");
         }
     }
+
+
+    private int currentPageFriendsTable = 0;
+
+    @FXML
+    Button buttonNextFT;
+    @FXML
+    Button buttonPreviousFT;
+    @FXML
+    Label labelPageFT;
+
+
+    private void initPageOfFriends() {
+
+        int pageSizeFT = 3;
+        Pageable pageable = new Pageable(currentPageFriendsTable, pageSizeFT);
+        Page<User> page = networkService.findAllFriendsOnPage(pageable, activeUser.getId());
+
+        int maxPage = Math.max(0, (int)(Math.ceil((double) page.getTotalNumberOfElements() / pageSizeFT) - 1));
+
+        if(currentPageFriendsTable > maxPage) {
+            currentPageFriendsTable = maxPage;
+            page = networkService.findAllFriendsOnPage(new Pageable(currentPageFriendsTable, pageSizeFT), activeUser.getId());
+        }
+
+        int totalNumberOfFriendsTable = page.getTotalNumberOfElements();
+
+        buttonPreviousFT.setDisable(currentPageFriendsTable == 0);
+        buttonNextFT.setDisable((currentPageFriendsTable + 1) * pageSizeFT >= totalNumberOfFriendsTable);
+
+        List<User> friends = StreamSupport.stream(page.getElementsOnPage().spliterator(), false)
+                .collect(Collectors.toList());
+
+        friendsModel.setAll(friends);
+
+        labelPageFT.setText((currentPageFriendsTable + 1) + "/" + (maxPage + 1));
+
+    }
+
+
+    public void onNextPageFT(ActionEvent actionEvent) {
+        currentPageFriendsTable++;
+        initPageOfFriends();
+    }
+
+    public void onPreviousPageFT(ActionEvent actionEvent) {
+        currentPageFriendsTable--;
+        initPageOfFriends();
+    }
+
 
 
 }

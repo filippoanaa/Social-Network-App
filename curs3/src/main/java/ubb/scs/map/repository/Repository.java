@@ -2,9 +2,9 @@ package ubb.scs.map.repository;
 
 
 import ubb.scs.map.domain.Entity;
-import ubb.scs.map.domain.exceptions.EntityAlreadyExistsException;
-import ubb.scs.map.domain.exceptions.EntityMissingException;
 import ubb.scs.map.domain.validators.ValidationException;
+import ubb.scs.map.utils.Page;
+import ubb.scs.map.utils.Pageable;
 
 import java.util.Optional;
 
