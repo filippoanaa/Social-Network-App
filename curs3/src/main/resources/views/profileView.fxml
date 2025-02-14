@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox prefHeight="600.0" prefWidth="400.0" spacing="20" alignment="CENTER" stylesheets="@/style/appStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ubb.scs.map.controllers.ProfileController">
+    <ImageView fx:id="imgProfilePicture" fitHeight="150" fitWidth="150" preserveRatio="true" styleClass="profile-image"/>
+    <HBox alignment="CENTER">
+        <Label text="Full Name: " />
+        <Label fx:id="lblFullName" />
+    </HBox>
+
+    <HBox alignment="CENTER">
+        <Label text="Username: " />
+        <Label fx:id="lblUsername"/>
+    </HBox>
+
+    <HBox alignment="CENTER">
+        <Label text="Friends: " />
+        <Label fx:id="lblFriendsCount" />
+    </HBox>
+
+    <HBox alignment="CENTER">
+        <Label text="Friend Status: " />
+        <Label fx:id="lblFriendStatus" />
+    </HBox>
+
+    <HBox spacing="10" alignment="CENTER">
+        <Button fx:id="btnDynamic" text="Add Friend" onAction="#updateDynamicButton" />
+        <Button fx:id="btnOpenChat" text="Open Chat" onAction="#handleOpenChat"/>
+    </HBox>
+
+</VBox>

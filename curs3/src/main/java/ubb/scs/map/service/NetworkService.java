@@ -1,5 +1,6 @@
 package ubb.scs.map.service;
 
+import org.controlsfx.control.tableview2.filter.filtereditor.SouthFilter;
 import ubb.scs.map.domain.Friendship;
 import ubb.scs.map.domain.FriendshipStatus;
 import ubb.scs.map.domain.Tuple;
@@ -14,6 +15,7 @@ import ubb.scs.map.repository.FriendshipPagingRepository;
 import ubb.scs.map.repository.Repository;
 import ubb.scs.map.utils.Page;
 import ubb.scs.map.utils.Pageable;
+import ubb.scs.map.utils.PasswordUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -152,17 +154,9 @@ public class NetworkService{
 
     public boolean verifyCredentials(String username, String password) {
         User user = findUserByUsername(username);
-        return user != null && user.getPassword().equals(password);
+        return user != null && PasswordUtils.checkPassword(password, user.getPassword());
     }
 
-    public Optional<User> findUserByName(String firstName, String lastName) {
-        for (User user : userRepository.findAll()) {
-            if ((user.getFirstName().equals(firstName) && user.getLastName().equals(lastName)) || (user.getLastName().equals(firstName) && user.getFirstName().equals(lastName))) {
-                return Optional.of(user);
-            }
-        }
-        return Optional.empty();
-    }
 
     public Iterable<User> getAcceptedFriendRequests(UUID id) {
         List<User> friends = new ArrayList<>();
@@ -227,8 +221,9 @@ public class NetworkService{
 
     public void declineFriendRequest(Tuple<UUID, UUID> id){
         Friendship friendship = friendshipRepository.findOne(id).orElseThrow();
-        friendship.setFriendshipStatus(FriendshipStatus.REJECTED);
-        friendshipRepository.update(friendship);
+        friendshipRepository.delete(friendship.getId());
+//        friendship.setFriendshipStatus(FriendshipStatus.REJECTED);
+//        friendshipRepository.update(friendship);
 
     }
 
@@ -252,4 +247,23 @@ public class NetworkService{
     }
 
 
+    public int getFriendsCount(UUID id) {
+        int count = 0;
+        for(User  _  : getAcceptedFriendRequests(id))
+            count++;
+        return count;
+    }
+
+    public Friendship findFriendship(UUID id1, UUID id2) {
+        System.out.println("Looking for friendship between: " + id1 + " and " + id2);
+        Optional<Friendship> friendship = friendshipRepository.findOne(new Tuple<>(id1, id2));
+        if (friendship.isPresent()) {
+            System.out.println("Friendship found");
+        } else {
+            System.out.println("No friendship found");
+        }
+        return friendship.orElse(null);
+    }
 }
+
+

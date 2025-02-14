@@ -5,7 +5,10 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
@@ -32,6 +35,7 @@ import java.util.stream.StreamSupport;
 
 public class UserController implements Initializable {
     private User activeUser;
+    @FXML
     public Label welcomeLabel;
     public Button buttonSendFriendRequest;
     public Button buttonRemoveFriend;
@@ -70,9 +74,6 @@ public class UserController implements Initializable {
 
     public Button buttonDeleteFriendRequest;
 
-    public Button buttonDeleteAccount;
-    public Button buttonLogOut;
-
     private NetworkService networkService;
 
 
@@ -103,9 +104,15 @@ public class UserController implements Initializable {
         sentFriendRequestsTable.setItems(sentFriendRequestModel);
         usersList.setItems(usersListModel);
         messagesList.setItems(messagesModel);
+
+        usersTable.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                handleViewProfile(new ActionEvent());
+            }
+        });
     }
 
-    private void initFriends() {
+    protected void initFriends() {
         //actualizez continutul listei
         Iterable<User> users = networkService.getAcceptedFriendRequests(activeUser.getId());
         List<User> usersList = StreamSupport.stream(users.spliterator(), false)
@@ -114,7 +121,7 @@ public class UserController implements Initializable {
     }
 
 
-    private void initUsers() {
+    protected void initUsers() {
         Iterable<User> users = networkService.getAllUsers();
         List<User> usersList = StreamSupport.stream(users.spliterator(), false)
                 .filter(user -> !Objects.equals(user.getId(), activeUser.getId()))
@@ -123,7 +130,7 @@ public class UserController implements Initializable {
     }
 
 
-    private void initReceivedRequests() {
+    protected void initReceivedRequests() {
 
         Iterable<Friendship> friendships = networkService.getReceivedRequests(activeUser.getId());
         List<Friendship> friendRequestsList = StreamSupport.stream(friendships.spliterator(), false)
@@ -131,7 +138,7 @@ public class UserController implements Initializable {
         receivedFriendRequestModel.setAll(friendRequestsList);
     }
 
-    private void initSentRequests() {
+    protected void initSentRequests() {
         Iterable<Friendship> friendships = networkService.getSentRequests(activeUser.getId());
         List<Friendship> friendRequestsList = StreamSupport.stream(friendships.spliterator(), false)
                 .filter(friendship -> !friendship.getFriendshipStatus().equals(FriendshipStatus.ACCEPTED))
@@ -366,6 +373,10 @@ public class UserController implements Initializable {
     @FXML
     private Label chatWithLabel;
 
+    public Button buttonDeleteAccount;
+    public Button buttonLogOut;
+
+
 
     private void initUsersList() {
         Iterable<User> users = networkService.getAllUsers();
@@ -529,7 +540,7 @@ public class UserController implements Initializable {
     Label labelPageFT;
 
 
-    private void initPageOfFriends() {
+    protected void initPageOfFriends() {
 
         int pageSizeFT = 3;
         Pageable pageable = new Pageable(currentPageFriendsTable, pageSizeFT);
@@ -556,17 +567,44 @@ public class UserController implements Initializable {
 
     }
 
-
+    @FXML
     public void onNextPageFT(ActionEvent actionEvent) {
         currentPageFriendsTable++;
         initPageOfFriends();
     }
 
+    @FXML
     public void onPreviousPageFT(ActionEvent actionEvent) {
         currentPageFriendsTable--;
         initPageOfFriends();
     }
 
+
+
+    public void handleViewProfile(ActionEvent actionEvent) {
+        User user = usersTable.getSelectionModel().getSelectedItem();
+        if (user != null) {
+            try {
+                FXMLLoader loader = new FXMLLoader();
+                loader.setLocation(getClass().getResource("/views/profileView.fxml"));
+                Parent root = loader.load();
+
+                ProfileController controller = loader.getController();
+                controller.setMainController(this);
+                controller.setNetworkService(this.networkService);
+                controller.setMessageService(messageService);
+                controller.setUsers(networkService.findUserByUsername(user.getUsername()), networkService.findUserByUsername(activeUser.getUsername()));
+
+
+                Stage stage = new Stage();
+                stage.setTitle("User Profile");
+                stage.setScene(new Scene(root));
+                stage.show();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
 
 }

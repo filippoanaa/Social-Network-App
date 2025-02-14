@@ -56,3 +56,12 @@
     -fx-background-color: rgba(63, 81, 181, 0.2); /* Fundal mai deschis pentru celulele pe hover */
     -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.3), 3, 0.0, 0, 3); /* Umbră ușoară pentru celulele pe hover */
 }
+
+/* Stilizare pentru imaginea de profil */
+.profile-image {
+    -fx-border-width: 3;
+    -fx-border-color: #3498db;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 8, 0.5, 0, 0);
+}
+
+

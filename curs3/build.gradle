@@ -61,9 +61,19 @@ dependencies {
     implementation 'org.openjfx:javafx-controls:19'
 }
 
+dependencies {
+    implementation 'org.mindrot:jbcrypt:0.4'
+}
+
+
+
 applicationDefaultJvmArgs = [
         '--module-path', 'C:\\Users\\Lenovo\\Downloads\\openjfx-20.0.2_windows-x64_bin-sdk\\javafx-sdk-20.0.2\\lib',  // Calea către folderul 'lib' al JavaFX SDK
         '--add-modules', 'javafx.controls,javafx.fxml',
         '--add-opens', 'javafx.graphics/com.sun.javafx.util=ALL-UNNAMED',  // Permite accesul la clasele interne
         '--add-opens', 'javafx.fxml/com.sun.javafx.fxml=ALL-UNNAMED' // Permite accesul la clasele interne din FXML
 ]
+processResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+

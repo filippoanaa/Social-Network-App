@@ -8,61 +8,52 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import ubb.scs.map.domain.Friendship;
-import ubb.scs.map.domain.Tuple;
 import ubb.scs.map.domain.User;
 import ubb.scs.map.domain.exceptions.UserAlreadyExistsException;
-import ubb.scs.map.domain.validators.FriendshipValidator;
-import ubb.scs.map.domain.validators.UserValidator;
 import ubb.scs.map.domain.validators.ValidationException;
-import ubb.scs.map.domain.validators.Validator;
-import ubb.scs.map.repository.Repository;
-import ubb.scs.map.repository.database.FriendshipRepositoryDatabase;
-import ubb.scs.map.repository.database.UserRepositoryDatabase;
 import ubb.scs.map.service.MessageService;
 import ubb.scs.map.service.NetworkService;
+import ubb.scs.map.utils.PasswordUtils;
 
 import java.io.IOException;
-import java.util.UUID;
 
 public class SignUpController {
     private NetworkService networkService;
     private MessageService messageService;
 
     @FXML
-    public TextField firstNameText;
+    private TextField firstNameText;
     @FXML
-    public TextField lastNameText;
+    private TextField lastNameText;
     @FXML
-    public TextField usernameText;
+    private TextField usernameText;
     @FXML
-    public TextField passwordText;
+    private TextField passwordText;
     @FXML
-    public TextField passwordConfirmationText;
+    private TextField passwordConfirmationText;
     @FXML
-    public Label messageToUser;
+    private Label messageToUser;
     @FXML
-    public Button createAccountButton;
+    private Button createAccountButton;
 
     private NetworkService getNetworkService() {
         return networkService;
     }
+
     void setNetworkService(NetworkService networkService) {
         this.networkService = networkService;
     }
 
 
-
     public void handleCreateAccount(ActionEvent event) throws IOException {
-        if(!passwordText.getText().equals(passwordConfirmationText.getText())) {
+        if (!passwordText.getText().equals(passwordConfirmationText.getText())) {
             messageToUser.setText("Passwords do not match");
-        }else{
-            User newUser = new User(usernameText.getText(), firstNameText.getText(), lastNameText.getText(), passwordText.getText());
-            try{
+        } else {
+            String hashedPassword = PasswordUtils.hashPassword(passwordText.getText());
+            User newUser = new User(usernameText.getText(), firstNameText.getText(), lastNameText.getText(), hashedPassword);
+            try {
                 networkService.addUser(newUser);
                 messageToUser.setText("Account created successfully");
 
@@ -83,9 +74,8 @@ public class SignUpController {
                 userController.initApp(newUser);
 
 
-
                 stage.show();
-            }catch(ValidationException | UserAlreadyExistsException e){
+            } catch (ValidationException | UserAlreadyExistsException e) {
                 messageToUser.setText(e.getMessage());
                 firstNameText.setText("");
                 lastNameText.setText("");

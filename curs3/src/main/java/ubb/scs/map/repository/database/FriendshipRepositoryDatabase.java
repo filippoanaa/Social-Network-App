@@ -78,13 +78,13 @@ public class FriendshipRepositoryDatabase implements FriendshipPagingRepository 
     }
 
 
-
     @Override
     public Optional<Friendship> findOne(Tuple<UUID, UUID> friendshipId) {
         if (friendshipId == null) throw new IllegalArgumentException("Friendship's id is null");
         UUID firstUser = friendshipId.getE1();
         UUID secondUser = friendshipId.getE2();
         String sql = "SELECT * FROM friendships WHERE (first_user = ? AND second_user = ?) OR (first_user = ? AND second_user = ?)";
+
         try (Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setObject(1, firstUser);
@@ -93,16 +93,16 @@ public class FriendshipRepositoryDatabase implements FriendshipPagingRepository 
             preparedStatement.setObject(4, firstUser);
 
             ResultSet resultSet = preparedStatement.executeQuery();
-            if (!resultSet.next()) {
-                throw new EntityMissingException("Friendship does not exist!");
+            if (resultSet.next()) {
+                return Optional.of(extractEntityFromResultSet(resultSet));
+            } else {
+                return Optional.empty();
             }
-            return Optional.of(extractEntityFromResultSet(resultSet));
         } catch (SQLException sqlException) {
             sqlException.printStackTrace();
+            return Optional.empty();
         }
-        return Optional.empty();
     }
-
 
     @Override
     public Optional<Friendship> delete(Tuple<UUID, UUID> friendshipId) {
@@ -143,12 +143,7 @@ public class FriendshipRepositoryDatabase implements FriendshipPagingRepository 
 
     @Override
     public boolean exists(Tuple<UUID, UUID> friendshipId) {
-        try {
-            findOne(friendshipId);
-        } catch (EntityMissingException e) {
-            return false;
-        }
-        return true;
+        return findOne(friendshipId).isPresent();
     }
 
     private int countFriendships(Connection connection, UUID id){
