@@ -2,26 +2,26 @@ package ubb.scs.map.controllers;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import ubb.scs.map.domain.User;
-import ubb.scs.map.domain.exceptions.UserAlreadyExistsException;
 import ubb.scs.map.domain.validators.ValidationException;
 import ubb.scs.map.service.MessageService;
 import ubb.scs.map.service.NetworkService;
-import ubb.scs.map.utils.PasswordUtils;
+import ubb.scs.map.utils.MyAlerts;
+import ubb.scs.map.utils.UIUtils;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 public class SignUpController {
     private NetworkService networkService;
     private MessageService messageService;
+    private byte[] profilePictureBytes;
 
     @FXML
     private TextField firstNameText;
@@ -30,64 +30,64 @@ public class SignUpController {
     @FXML
     private TextField usernameText;
     @FXML
-    private TextField passwordText;
+    private PasswordField passwordText;
     @FXML
-    private TextField passwordConfirmationText;
-    @FXML
-    private Label messageToUser;
-    @FXML
-    private Button createAccountButton;
-
-    private NetworkService getNetworkService() {
-        return networkService;
-    }
+    private PasswordField passwordConfirmationText;
 
     void setNetworkService(NetworkService networkService) {
         this.networkService = networkService;
     }
 
+    public void handleUploadPicture() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
+        File selectedFile = fileChooser.showOpenDialog(null);
 
-    public void handleCreateAccount(ActionEvent event) throws IOException {
+        if (selectedFile != null) {
+            try {
+                profilePictureBytes = Files.readAllBytes(selectedFile.toPath());
+            } catch (IOException e) {
+                MyAlerts.showErrorAlert("Failed to upload picture.");
+            }
+        }
+    }
+
+    public void handleCreateAccount(ActionEvent event) {
         if (!passwordText.getText().equals(passwordConfirmationText.getText())) {
-            messageToUser.setText("Passwords do not match");
+            MyAlerts.showErrorAlert("Passwords do not match");
+            passwordText.clear();
+            passwordConfirmationText.clear();
         } else {
-            String hashedPassword = PasswordUtils.hashPassword(passwordText.getText());
-            User newUser = new User(usernameText.getText(), firstNameText.getText(), lastNameText.getText(), hashedPassword);
+            if (profilePictureBytes == null) {
+                MyAlerts.showErrorAlert("Profile picture is required.");
+                return;
+            }
+
+            User newUser = new User(usernameText.getText(), firstNameText.getText(), lastNameText.getText(), passwordText.getText(), profilePictureBytes);
             try {
                 networkService.addUser(newUser);
-                messageToUser.setText("Account created successfully");
+                MyAlerts.showConfirmationAlert("Account created successfully");
 
                 Stage currentStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
                 currentStage.close();
 
-                FXMLLoader loader = new FXMLLoader();
-                loader.setLocation(getClass().getResource("/views/userView.fxml"));
-                Stage stage = new Stage();
-                VBox appLayout = loader.load();
-                Scene scene = new Scene(appLayout, 650, 500);
-                stage.setTitle("Account Settings");
-                stage.setScene(scene);
-
-                UserController userController = loader.getController();
-                userController.setNetworkService(networkService);
-                userController.setMessageService(messageService);
-                userController.initApp(newUser);
-
-
-                stage.show();
-            } catch (ValidationException | UserAlreadyExistsException e) {
-                messageToUser.setText(e.getMessage());
-                firstNameText.setText("");
-                lastNameText.setText("");
-                usernameText.setText("");
-                passwordText.setText("");
-                passwordConfirmationText.setText("");
+                UIUtils.openAccountSettings(networkService, messageService, newUser);
+            }catch (ValidationException e){
+                MyAlerts.showErrorAlert(e.getMessage());
             } catch (Exception e) {
-                messageToUser.setText(e.getMessage());
+                MyAlerts.showErrorAlert(e.getMessage());
             }
+            clearFields();
         }
+    }
 
 
+    private void clearFields() {
+        firstNameText.setText("");
+        lastNameText.setText("");
+        usernameText.setText("");
+        passwordText.setText("");
+        passwordConfirmationText.setText("");
     }
 
     public void setMessageService(MessageService messageService) {

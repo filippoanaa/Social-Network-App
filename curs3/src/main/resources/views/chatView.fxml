@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.control.ListView?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.control.Button?>
 
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 
-<VBox  alignment="CENTER" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ubb.scs.map.controllers.MessageController">
-    <ListView fx:id="messagesList" prefHeight="400.0" prefWidth="600.0"/>
+<VBox alignment="CENTER" stylesheets="/style/appStyle.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ubb.scs.map.controllers.MessageController">
+    <Label fx:id="chattingWithLbl" prefHeight="17.0" prefWidth="227.0" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+    <ListView fx:id="messagesList" prefHeight="400.0" prefWidth="600.0" />
     <HBox spacing="10">
-        <TextField fx:id="messageTextField" promptText="Type a message..." />
-        <Button fx:id="buttonSendMessage" onAction="#handleSendMessage" text="Send" />
+        <TextField fx:id="messageTextField" prefHeight="31.0" prefWidth="540.0" promptText="Type a message..." />
+        <Button id="buttonSendMessage" onAction="#handleSendMessage" text="Send" />
     </HBox>
+    <Button id="buttonDeleteConversation" text="Delete conversation" onMouseClicked="#handleDeleteConversation" />
 </VBox>

@@ -16,9 +16,9 @@ public class FriendshipRepository extends AbstractFileRepository<Tuple<UUID, UUI
 
     @Override
     public Friendship createEntity(String line) {
-        String[] splited = line.split(";");
-        Friendship friendship = new Friendship(UUID.fromString(splited[0]), UUID.fromString(splited[1]), LocalDateTime.parse(splited[2]), FriendshipStatus.valueOf(splited[3]));
-        friendship.setSender(UUID.fromString(splited[4]));
+        String[] split = line.split(";");
+        Friendship friendship = new Friendship(UUID.fromString(split[0]), UUID.fromString(split[1]), LocalDateTime.parse(split[2]), FriendshipStatus.valueOf(split[3]));
+        friendship.setSender(UUID.fromString(split[4]));
         return friendship;
     }
 

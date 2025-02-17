@@ -19,38 +19,29 @@
     <Label styleClass="input-label" text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
     <PasswordField fx:id="passwordText" styleClass="input-field" GridPane.columnIndex="2" GridPane.rowIndex="4" />
 
-    <Label styleClass="input-label" text="Password Conformation:" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+    <Label styleClass="input-label" text="Password Confirmation:" GridPane.columnIndex="0" GridPane.rowIndex="5" />
     <PasswordField fx:id="passwordConfirmationText" styleClass="input-field" GridPane.columnIndex="2" GridPane.rowIndex="5" />
 
-    <Label fx:id="messageToUser"
-           prefHeight="50.0"
-           prefWidth="200.0"
-           styleClass="error-message"
-           wrapText="true"
-           GridPane.columnIndex="0"
-           GridPane.columnSpan="3"
-           GridPane.rowIndex="7" />
+    <Label styleClass="input-label" text="Profile Picture:" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+    <Button id="uploadPictureButton" onAction="#handleUploadPicture" prefHeight="25.0" prefWidth="194.0" styleClass="input-field" text="Upload photo" GridPane.columnIndex="2" GridPane.rowIndex="6" />
 
-    <HBox alignment="center" spacing="10" GridPane.columnIndex="2" GridPane.rowIndex="6">
+    <HBox alignment="center" spacing="10" GridPane.columnIndex="2" GridPane.rowIndex="7">
         <Button id="createAccountButton" onAction="#handleCreateAccount" prefHeight="25.0" prefWidth="149.0" styleClass="login-button" text="Create account" />
     </HBox>
-
-
-
-
-    <columnConstraints>
-        <ColumnConstraints />
-        <ColumnConstraints />
-        <ColumnConstraints />
-    </columnConstraints>
-    <rowConstraints>
-        <RowConstraints />
-        <RowConstraints />
-        <RowConstraints />
-        <RowConstraints />
-        <RowConstraints />
-        <RowConstraints />
+   <columnConstraints>
+      <ColumnConstraints />
+      <ColumnConstraints />
+      <ColumnConstraints />
+   </columnConstraints>
+   <rowConstraints>
       <RowConstraints />
-    </rowConstraints>
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+   </rowConstraints>
 
 </GridPane>

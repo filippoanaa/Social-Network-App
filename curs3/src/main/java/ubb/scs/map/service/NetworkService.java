@@ -1,6 +1,5 @@
 package ubb.scs.map.service;
 
-import org.controlsfx.control.tableview2.filter.filtereditor.SouthFilter;
 import ubb.scs.map.domain.Friendship;
 import ubb.scs.map.domain.FriendshipStatus;
 import ubb.scs.map.domain.Tuple;
@@ -13,14 +12,14 @@ import ubb.scs.map.domain.validators.ValidationException;
 import ubb.scs.map.domain.validators.Validator;
 import ubb.scs.map.repository.FriendshipPagingRepository;
 import ubb.scs.map.repository.Repository;
+import ubb.scs.map.utils.Observable;
 import ubb.scs.map.utils.Page;
 import ubb.scs.map.utils.Pageable;
 import ubb.scs.map.utils.PasswordUtils;
-
 import java.time.LocalDateTime;
 import java.util.*;
 
-public class NetworkService{
+public class NetworkService extends Observable {
     private final Repository<UUID, User> userRepository;
     private final FriendshipPagingRepository friendshipRepository;
     private final Validator<User> userValidator;
@@ -32,6 +31,12 @@ public class NetworkService{
         this.userValidator = userValidator;
         this.friendshipValidator = friendshipValidator;
     }
+
+    public boolean verifyCredentials(String username, String password) {
+        User user = findUserByUsername(username);
+        return user != null && PasswordUtils.checkPassword(password, user.getPassword());
+    }
+
 
     public User findUserByUsername(String username){
         Iterable<User> users = userRepository.findAll();
@@ -52,11 +57,15 @@ public class NetworkService{
         userValidator.validate(user);
         if(findUserByUsername(user.getUsername()) != null)
             throw new UserAlreadyExistsException("User with username: " + user.getUsername() + " already exists!");
-        userRepository.save(user);
 
+        String hashedPassword = PasswordUtils.hashPassword(user.getPassword());
+        user.setPassword(hashedPassword);
+
+        userRepository.save(user);
+        notifyObservers();
     }
 
-    public void deleteUser(UUID id) {
+    public void deleteUser(UUID id) throws EntityMissingException{
         User user = findUserById(id).orElse(null);
         if (user != null) {
             List<Friendship> toDelete = new ArrayList<>();
@@ -66,22 +75,23 @@ public class NetworkService{
                 }
             });
             toDelete.forEach(friendship -> friendshipRepository.delete(friendship.getId()));
-           // user.getFriends().forEach(friend -> friend.removeFriend(user));
             userRepository.delete(user.getId());
-
+            notifyObservers();
         }else{
             throw new EntityMissingException("User not found!");
         }
 
     }
 
-    public void updateUser(User user) throws EntityMissingException, ValidationException {
+    public void updateUser(User user) throws ValidationException {
         userValidator.validate(user);
         userRepository.update(user);
+        notifyObservers();
     }
 
     public void updateFriendship(Friendship friendship){
         friendshipRepository.update(friendship);
+        notifyObservers();
     }
 
     public Iterable<User> getAllUsers() {
@@ -106,12 +116,12 @@ public class NetworkService{
 
     public void createFriendship(Friendship friendship) throws ValidationException, UserMissingException, EntityAlreadyExistsException {
         friendshipValidator.validate(friendship);
-
         if (friendshipRepository.exists(friendship.getId())) {
             throw new EntityAlreadyExistsException("A friend request has already been sent to this user");
         }
 
         friendshipRepository.save(friendship);
+        notifyObservers();
     }
 
 
@@ -141,24 +151,21 @@ public class NetworkService{
         user1.removeFriend(user2);
         user2.removeFriend(user1);
         friendshipRepository.delete(friendship.getId());
+        notifyObservers();
     }
 
     public void removeFriendRequest(UUID id1, UUID id2){
         Friendship friendship = friendshipRepository.findOne(new Tuple<>(id1, id2)).orElseThrow();
         if(friendship.getFriendshipStatus() != FriendshipStatus.PENDING)
             throw new IllegalArgumentException("You cannot delete this friend request anymore!It's already declined.");
-        else
+        else {
             removeFriendship(id1, id2);
+            notifyObservers();
+        }
     }
 
 
-    public boolean verifyCredentials(String username, String password) {
-        User user = findUserByUsername(username);
-        return user != null && PasswordUtils.checkPassword(password, user.getPassword());
-    }
-
-
-    public Iterable<User> getAcceptedFriendRequests(UUID id) {
+    public List<User> getAcceptedFriendRequests(UUID id) {
         List<User> friends = new ArrayList<>();
         for (Friendship friendship : friendshipRepository.findAll()) {
             UUID user1 = friendship.getUser1();
@@ -173,7 +180,7 @@ public class NetworkService{
     }
 
 
-    public Iterable<Friendship> getSentRequests(UUID id) {
+    public List<Friendship> getSentRequests(UUID id) {
         List<Friendship> friendships = new ArrayList<>();
         for (Friendship friendship : friendshipRepository.findAll() ) {
             UUID user1 = friendship.getUser1();
@@ -192,9 +199,9 @@ public class NetworkService{
         for (Friendship friendship : friendshipRepository.findAll() ) {
             UUID user1 = friendship.getUser1();
             UUID user2 = friendship.getUser2();
-            if (user1.equals(id) && !friendship.isSender(user1) ) {
+            if (user1.equals(id) && !friendship.isSender(user1) && friendship.getFriendshipStatus().equals(FriendshipStatus.PENDING)) {
                 friendships.add(friendship);
-            } else if (user2.equals(id) && !friendship.isSender(user2)) {
+            } else if (user2.equals(id) && !friendship.isSender(user2)  && friendship.getFriendshipStatus().equals(FriendshipStatus.PENDING)) {
                 friendships.add(friendship);
             }
         }
@@ -202,7 +209,7 @@ public class NetworkService{
     }
 
 
-    public void  acceptFriendRequest(Tuple<UUID, UUID> id){
+    public void  acceptFriendRequest(Tuple<UUID, UUID> id) throws IllegalArgumentException{
         Friendship friendship = friendshipRepository.findOne(id).orElseThrow();
         if(!friendship.getFriendshipStatus().equals(FriendshipStatus.PENDING)){
             throw new IllegalArgumentException("You cannot accept this friend request!");
@@ -217,14 +224,13 @@ public class NetworkService{
 
         user1.addFriend(user2);
         user2.addFriend(user1);
+        notifyObservers();
     }
 
     public void declineFriendRequest(Tuple<UUID, UUID> id){
         Friendship friendship = friendshipRepository.findOne(id).orElseThrow();
         friendshipRepository.delete(friendship.getId());
-//        friendship.setFriendshipStatus(FriendshipStatus.REJECTED);
-//        friendshipRepository.update(friendship);
-
+        notifyObservers();
     }
 
     public Page<User> findAllFriendsOnPage(Pageable pageable, UUID id) {
@@ -248,21 +254,11 @@ public class NetworkService{
 
 
     public int getFriendsCount(UUID id) {
-        int count = 0;
-        for(User  _  : getAcceptedFriendRequests(id))
-            count++;
-        return count;
+        return getAcceptedFriendRequests(id).size();
     }
 
-    public Friendship findFriendship(UUID id1, UUID id2) {
-        System.out.println("Looking for friendship between: " + id1 + " and " + id2);
-        Optional<Friendship> friendship = friendshipRepository.findOne(new Tuple<>(id1, id2));
-        if (friendship.isPresent()) {
-            System.out.println("Friendship found");
-        } else {
-            System.out.println("No friendship found");
-        }
-        return friendship.orElse(null);
+    public Optional<Friendship> findFriendship(UUID id1, UUID id2) {
+        return friendshipRepository.findOne(new Tuple<>(id1, id2));
     }
 }
 

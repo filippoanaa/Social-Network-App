@@ -25,8 +25,9 @@ public class UserRepositoryDatabase implements Repository<UUID, User> {
         String username = resultSet.getString("username");
         String firstName = resultSet.getString("first_name");
         String lastName = resultSet.getString("last_name");
-        String password = resultSet.getString("password");;
-        User user = new User(username, firstName, lastName, password);
+        String password = resultSet.getString("password");
+        byte[] profilePicture = resultSet.getBytes("profile_picture");
+        User user = new User(username, firstName, lastName, password, profilePicture);
         user.setId(id);
         return user;
     }
@@ -73,7 +74,7 @@ public class UserRepositoryDatabase implements Repository<UUID, User> {
         if (exists(entity.getId())) {
             throw new EntityAlreadyExistsException(entity.getId() + " already exists");
         }
-        String sql = "INSERT INTO users (id, username, first_name, last_name, password) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (id, username, first_name, last_name, password, profile_picture) VALUES (?, ?, ?, ?, ?, ?)"; // New
         try (Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setObject(1, entity.getId());
@@ -81,6 +82,7 @@ public class UserRepositoryDatabase implements Repository<UUID, User> {
             preparedStatement.setString(3, entity.getFirstName());
             preparedStatement.setString(4, entity.getLastName());
             preparedStatement.setString(5, entity.getPassword());
+            preparedStatement.setBytes(6, entity.getProfilePicture()); // New
             preparedStatement.executeUpdate();
         } catch (SQLException sqlException) {
             sqlException.printStackTrace();
@@ -105,14 +107,15 @@ public class UserRepositoryDatabase implements Repository<UUID, User> {
     @Override
     public Optional<User> update(User entity) {
         findOne(entity.getId()).orElseThrow(() -> new EntityMissingException(entity.getId() + " does not exist!"));
-        String sql = "UPDATE users SET username = ?, first_name = ?, last_name = ?, password = ? WHERE id = ?";
+        String sql = "UPDATE users SET username = ?, first_name = ?, last_name = ?, password = ?, profile_picture = ? WHERE id = ?"; // New
         try (Connection connection = DriverManager.getConnection(this.url, this.username, this.password);
              PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, entity.getUsername());
             preparedStatement.setString(2, entity.getFirstName());
             preparedStatement.setString(3, entity.getLastName());
             preparedStatement.setString(4, entity.getPassword());
-            preparedStatement.setObject(5, entity.getId());
+            preparedStatement.setBytes(5, entity.getProfilePicture());
+            preparedStatement.setObject(6, entity.getId());
             preparedStatement.executeUpdate();
         } catch (SQLException sqlException) {
             sqlException.printStackTrace();
@@ -129,7 +132,4 @@ public class UserRepositoryDatabase implements Repository<UUID, User> {
         }
         return true;
     }
-
-
-
 }

@@ -5,10 +5,10 @@ import ubb.scs.map.domain.User;
 import ubb.scs.map.domain.exceptions.UserMissingException;
 import ubb.scs.map.repository.database.MessageRepositoryDatabase;
 import ubb.scs.map.repository.database.UserRepositoryDatabase;
-
+import ubb.scs.map.utils.Observable;
 import java.util.*;
 
-public class MessageService {
+public class MessageService extends Observable {
     private final MessageRepositoryDatabase messageRepositoryDatabase;
     private final UserRepositoryDatabase userRepositoryDatabase;
 
@@ -17,28 +17,23 @@ public class MessageService {
         this.userRepositoryDatabase = userRepositoryDatabase;
     }
 
-    public void addMessage(Message message) {
+    public void addMessage(Message message) throws UserMissingException {
         if(!userRepositoryDatabase.exists(message.getFrom().getId()))
             throw new UserMissingException("Sender does not exits!");
 
         for(User recipient : message.getTo()){
             if (!userRepositoryDatabase.exists(recipient.getId())) {
-                throw new IllegalArgumentException("Recipient does not exist: " + recipient.getId());
+                throw new UserMissingException("Recipient does not exist: " + recipient.getId());
             }
         }
 
         messageRepositoryDatabase.save(message);
-    }
-
-
-    public Iterable<Message> getMessages() {
-        return messageRepositoryDatabase.findAll();
+        notifyObservers();
     }
 
 
     public List<Message> getMessagesBetween(UUID id1, UUID id2){
         List<Message> messages = messageRepositoryDatabase.findMessagesBetween(id1, id2);
-        System.out.println("Lung mesaje: " + messages.size());
         messages.sort(Comparator.comparing(Message::getDate));
         return messages;
 
@@ -50,5 +45,6 @@ public class MessageService {
         for(Message message : messages){
             messageRepositoryDatabase.delete(message.getId());
         }
+        notifyObservers();
     }
 }

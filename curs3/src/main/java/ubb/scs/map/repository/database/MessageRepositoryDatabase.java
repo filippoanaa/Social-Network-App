@@ -5,9 +5,6 @@ import ubb.scs.map.domain.User;
 import ubb.scs.map.domain.exceptions.EntityMissingException;
 import ubb.scs.map.domain.exceptions.UserMissingException;
 import ubb.scs.map.repository.Repository;
-import ubb.scs.map.utils.Page;
-import ubb.scs.map.utils.Pageable;
-
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;

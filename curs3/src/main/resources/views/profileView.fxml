@@ -29,7 +29,7 @@
 
     <HBox spacing="10" alignment="CENTER">
         <Button fx:id="btnDynamic" text="Add Friend" onAction="#updateDynamicButton" />
-        <Button fx:id="btnOpenChat" text="Open Chat" onAction="#handleOpenChat"/>
+        <Button id="btnOpenChat" text="Open Chat" onAction="#handleOpenChat"/>
     </HBox>
 
 </VBox>

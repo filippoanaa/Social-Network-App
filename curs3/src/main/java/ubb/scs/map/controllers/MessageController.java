@@ -3,22 +3,24 @@ package ubb.scs.map.controllers;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.ListCell;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import ubb.scs.map.domain.Message;
 import ubb.scs.map.domain.User;
 import ubb.scs.map.service.MessageService;
+import ubb.scs.map.utils.MyAlerts;
+import ubb.scs.map.utils.Observer;
+import ubb.scs.map.utils.UIUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class MessageController {
+public class MessageController implements Observer {
     @FXML
-    private Button buttonSendMessage;
+    private Label chattingWithLbl;
     @FXML
     private TextField messageTextField;
     @FXML
@@ -27,15 +29,18 @@ public class MessageController {
     private MessageService messageService;
     private User connectedUser;
     private User currentUser;
-    private ObservableList<Message> messagesModel = FXCollections.observableArrayList();
+    private final ObservableList<Message> messagesModel = FXCollections.observableArrayList();
 
     public void setUsers(User connectedUser, User currentUser) {
         this.connectedUser = connectedUser;
         this.currentUser = currentUser;
+        chattingWithLbl.setText("Chatting with: " + currentUser.getUsername());
+        initMessages();
     }
 
     public void setMessageService(MessageService messageService) {
         this.messageService = messageService;
+        messageService.addObserver(this);
     }
 
     @FXML
@@ -43,55 +48,44 @@ public class MessageController {
         messagesList.setItems(messagesModel);
     }
 
-    public void handleSendMessage(){
+    public void handleSendMessage() {
         String text = messageTextField.getText();
-        if (!text.isEmpty()) {
-            List<User> to = new ArrayList<>();
-            to.add(currentUser);
-            Message message = new Message(connectedUser, to, text);
-
-            Message selectedMessage = messagesList.getSelectionModel().getSelectedItem();
-            if (selectedMessage != null) {
-                message.setReply(selectedMessage);
-                messagesList.getSelectionModel().clearSelection();
-            }
-            message.setFrom(connectedUser);
-            messageService.addMessage(message);
-            messagesModel.add(message);
+        if (text.isEmpty()) {
+            MyAlerts.showErrorAlert("Type a message before sending.");
+            return;
         }
         messageTextField.clear();
+        List<User> to = new ArrayList<>();
+        to.add(currentUser);
+
+        Message message = new Message(connectedUser, to, text);
+
+        Message selectedMessage = messagesList.getSelectionModel().getSelectedItem();
+        if (selectedMessage != null) {
+            message.setReply(selectedMessage);
+            messagesList.getSelectionModel().clearSelection();
+        }
+        message.setFrom(connectedUser);
+        messageService.addMessage(message);
+
     }
 
-    private void formatMessages(List<Message> messages) {
-        messagesModel.setAll(messages);
+    @FXML
+    private void handleDeleteConversation() {
+        messageService.deleteConversation(connectedUser.getId(), currentUser.getId());
+        MyAlerts.showConfirmationAlert("Conversation deleted successfully");
 
-        messagesList.setCellFactory(listView -> new ListCell<>() {
-            @Override
-            protected void updateItem(Message message, boolean empty) {
-                super.updateItem(message, empty);
-                if (empty || message == null) {
-                    setText(null);
-                } else {
-                    String displayText = "";
-                    if (message.getFrom().equals(connectedUser)) {
-                        displayText += "You: " + message.getText();
-                    } else {
-                        displayText += message.getFrom().getUsername() + ": " + message.getText();
-                    }
-                    if (message.getReply() != null) {
-                        displayText += " (Reply to: " + message.getReply().getText() + ")";
-                    }
-                    setText(displayText);
-                }
-            }
-        });
     }
 
-    public void handleOpenChat(){
+    private void initMessages() {
         Iterable<Message> messages = messageService.getMessagesBetween(connectedUser.getId(), currentUser.getId());
-        List<Message> messagesList = StreamSupport.stream(messages.spliterator(), false)
+        List<Message> messagesLst = StreamSupport.stream(messages.spliterator(), false)
                 .collect(Collectors.toList());
-        messagesModel.setAll(messagesList);
-        formatMessages(messagesList);
+        UIUtils.formatMessages(messagesLst, messagesModel, messagesList, connectedUser);
+    }
+
+    @Override
+    public void update() {
+        initMessages();
     }
 }

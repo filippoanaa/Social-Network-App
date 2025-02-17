@@ -1,4 +1,4 @@
-package ubb.scs.map;
+package ubb.scs.map.UI;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -16,16 +16,17 @@ import ubb.scs.map.repository.database.MessageRepositoryDatabase;
 import ubb.scs.map.repository.database.UserRepositoryDatabase;
 import ubb.scs.map.service.MessageService;
 import ubb.scs.map.service.NetworkService;
+import ubb.scs.map.utils.MyAlerts;
 
 import java.io.IOException;
 
-public class MainGUI extends Application {
+public class GUIConsole extends Application {
     public static void main(String[] args) {
         launch(args);
     }
 
     @Override
-    public void start(Stage stage) throws IOException {
+    public void start(Stage stage){
         try {
 
             final String url = "jdbc:postgresql://localhost:5432/social_network";
@@ -50,7 +51,7 @@ public class MainGUI extends Application {
             controller.setMessageService(messageService);
             stage.show();
         } catch (IOException e) {
-            throw new RuntimeException("Error loading FXML file", e);
+            MyAlerts.showErrorAlert(e.getMessage());
         }
 
     }

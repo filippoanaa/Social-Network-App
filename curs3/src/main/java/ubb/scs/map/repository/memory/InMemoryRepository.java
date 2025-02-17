@@ -2,13 +2,8 @@ package ubb.scs.map.repository.memory;
 
 
 import ubb.scs.map.domain.Entity;
-import ubb.scs.map.domain.exceptions.EntityAlreadyExistsException;
-import ubb.scs.map.domain.exceptions.EntityMissingException;
-import ubb.scs.map.domain.exceptions.UserMissingException;
 import ubb.scs.map.domain.validators.ValidationException;
 import ubb.scs.map.repository.Repository;
-import ubb.scs.map.utils.Page;
-import ubb.scs.map.utils.Pageable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +14,7 @@ public class InMemoryRepository<ID, E extends Entity<ID>> implements Repository<
     protected Map<ID, E> entities;
 
     public InMemoryRepository() {
-        entities = new HashMap<ID, E>();
+        entities = new HashMap<>();
     }
 
     @Override

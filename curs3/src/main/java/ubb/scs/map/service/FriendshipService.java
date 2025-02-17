@@ -3,7 +3,6 @@ package ubb.scs.map.service;
 import java.util.*;
 
 public class FriendshipService {
-
     NetworkService NetworkService;
     private final Map<UUID, List<UUID>> adjacencyList = new HashMap<>();
 

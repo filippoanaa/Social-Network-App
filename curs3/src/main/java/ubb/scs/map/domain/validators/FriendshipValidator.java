@@ -1,7 +1,6 @@
 package ubb.scs.map.domain.validators;
 
 import ubb.scs.map.domain.Friendship;
-import ubb.scs.map.domain.Tuple;
 
 public class FriendshipValidator implements Validator<Friendship>{
 

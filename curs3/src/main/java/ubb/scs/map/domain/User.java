@@ -10,17 +10,19 @@ public class User extends Entity<UUID>{
     private String firstName;
     private String lastName;
     private String password;
+    private byte[] profilePicture;
     private List<User> friends;
 
-    public User(String username, String firstName, String lastName, String password) {
+    public User(String username, String firstName, String lastName, String password, byte[] profilePicture) {
         this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;
         this.password = password;
+        this.profilePicture = profilePicture; // Initialize new attribute
         friends = new ArrayList<>();
         this.setId(UUID.randomUUID());
-
     }
+
 
     public String getUsername(){ return username; }
     public void setUsername(String username){ this.username = username; }
@@ -46,6 +48,14 @@ public class User extends Entity<UUID>{
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public byte[] getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(byte[] profilePicture) {
+        this.profilePicture = profilePicture;
     }
 
     public List<User> getFriends() {
@@ -82,6 +92,4 @@ public class User extends Entity<UUID>{
     public int hashCode() {
         return Objects.hash(getFirstName(), getLastName());
     }
-
-
 }

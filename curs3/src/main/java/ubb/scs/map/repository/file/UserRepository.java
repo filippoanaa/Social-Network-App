@@ -12,9 +12,9 @@ public class UserRepository extends AbstractFileRepository<UUID, User> {
 
     @Override
     public User createEntity(String line) {
-        String[] splited = line.split(";");
-        User user = new User(splited[1], splited[2], splited[3], splited[4]);
-        user.setId(UUID.fromString(splited[0]));
+        String[] split = line.split(";");
+        User user = new User(split[1], split[2], split[3], split[4], split[5].getBytes());
+        user.setId(UUID.fromString(split[0]));
         return user;
     }
 

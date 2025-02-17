@@ -6,7 +6,6 @@ import ubb.scs.map.domain.Tuple;
 import ubb.scs.map.domain.exceptions.EntityAlreadyExistsException;
 import ubb.scs.map.domain.exceptions.EntityMissingException;
 import ubb.scs.map.repository.FriendshipPagingRepository;
-import ubb.scs.map.repository.Repository;
 import ubb.scs.map.utils.Page;
 import ubb.scs.map.utils.Pageable;
 
@@ -61,6 +60,7 @@ public class FriendshipRepositoryDatabase implements FriendshipPagingRepository 
         return findOne(entity.getId());
     }
 
+    @Override
     public Iterable<Friendship> findAll() {
         Map<Tuple<UUID, UUID>, Friendship> friendships = new HashMap<>();
         String sql = "SELECT * FROM friendships";
