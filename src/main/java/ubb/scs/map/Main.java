@@ -23,8 +23,6 @@
 //        Validator<User> userValidator = new UserValidator();
 //        Repository<UUID, User> userRepository = new UserRepositoryDatabase("jdbc:postgresql://localhost:5432/social_network", "postgres","postgres");
 //        Repository<Tuple<UUID, UUID>, Friendship> friendshipRepository = new FriendshipRepositoryDatabase("jdbc:postgresql://localhost:5432/social_network", "postgres","postgres");
-//       //Repository<String , User> userRepository = new UserRepository("D:\\Semestrul 3\\MAP\\teme-labs\\SocialNetwork\\curs3\\data\\users.txt");
-//       //Repository<Tuple<String, String>, Friendship> friendshipRepository = new FriendshipRepository("D:\\Semestrul 3\\MAP\\teme-labs\\SocialNetwork\\curs3\\data\\friendships.txt");
 //        Validator<Friendship> friendshipValidator = new FriendshipValidator();
 //        NetworkService userService = new NetworkService(userRepository,friendshipRepository, userValidator, friendshipValidator);
 //        FriendshipService friendshipService = new FriendshipService(userService);
