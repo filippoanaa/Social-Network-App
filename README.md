@@ -11,7 +11,7 @@ This project is a Java-based social network applicationthat provides users with 
     * Users can send and delete friend requests.
     * Friend requests can be accepted or declined.
     * Users receive notifications about new friend requests when they log into their account.
-- Messaging:  
+- Messages:  
   * Users can send, receive, and reply to messages.
   * Option to send the same message to multiple users simultaneously.
 - Profile:  
