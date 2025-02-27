@@ -1,6 +1,6 @@
 # Social Network App
 
-This project is a Java-based social network applicationthat provides users with the ability to interact with each other.
+This project is a Java-based social network application that provides users with the ability to interact with each other.
 
 ## Functional Features 
 - Log In / Create account:  
