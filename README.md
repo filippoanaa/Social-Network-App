@@ -34,5 +34,4 @@ This project is a Java-based social network application that provides users with
 - CSS to make the graphical interface more aesthetic
 - PostgreSQL
 
-## Demo 
-[Vieo here](https://youtu.be/CBuPepYlfgk)
+
